@@ -341,7 +341,7 @@ if __name__ == '__main__':
 
     # Testing
     model_name = "models/" + model_type + str(model_idx)
-    model = torch.load(model_name, map_location=torch.device('cpu'))
+    model = torch.load(model_name, map_location=torch.device(get_device()))
     summary = test(model, get_label_encoder(label_type), label_type, test_list)
     y_prob = summary['y_prob'][0]
     y_true = summary['y_true'][0]
