@@ -4,7 +4,12 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from phone_mapping import phone_to_phoneme
+from phone_mapping import phone_to_moa
+from phone_mapping import get_phoneme_list
+from phone_mapping import get_moa_list
 from sklearn.metrics import confusion_matrix
+from sklearn import preprocessing
 
 
 def sort_classes(cm, classes, sorted_classes):
@@ -34,6 +39,46 @@ def sort_classes(cm, classes, sorted_classes):
 			sorted_cm[j, k] = cm[sort_idx[j], sort_idx[k]]
 
 	return sorted_cm
+
+
+def plot_phoneme_confusion_matrix(y_true, y_pred, le):
+	""" Plots phoneme confusion matrix
+
+	Args:
+		y_true (np.array): true labels, expressed as ints
+		y_pred (np.array): predicted labels, expressed as ints
+		le (LabelEncoder): label encoder
+
+	Returns:
+		none
+
+	"""
+	phoneme_true = phone_to_phoneme(le.inverse_transform(y_true), 39)
+	phoneme_pred = phone_to_phoneme(le.inverse_transform(y_pred), 39)
+	le_phoneme = preprocessing.LabelEncoder()
+	phoneme_true = le_phoneme.fit_transform(phoneme_true)
+	phoneme_pred = le_phoneme.transform(phoneme_pred)
+	plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, get_phoneme_list())
+
+
+def plot_moa_confusion_matrix(y_true, y_pred, le):
+	""" Plots manner of articulation confusion matrix
+
+	Args:
+		y_true (np.array): true labels, expressed as ints
+		y_pred (np.array): predicted labels, expressed as ints
+		le (LabelEncoder): label encoder
+
+	Returns:
+		none
+
+	"""
+	moa_true = phone_to_moa(le.inverse_transform(y_true))
+	moa_pred = phone_to_moa(le.inverse_transform(y_pred))
+	le_moa = preprocessing.LabelEncoder()
+	moa_true = le_moa.fit_transform(moa_true)
+	moa_pred = le_moa.transform(moa_pred)
+	plot_confusion_matrix(moa_true, moa_pred, le_moa, get_moa_list())
 
 
 def plot_confusion_matrix(y_true, y_pred, le, sort_order):
@@ -73,4 +118,4 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	plt.yticks(labels_int, sort_order)
 	plt.colorbar()
 	plt.clim(0, 1)
-	plt.savefig("fig.png", bbox_inches='tight')
+	# plt.savefig("fig.png", bbox_inches='tight')

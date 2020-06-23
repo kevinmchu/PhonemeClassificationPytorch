@@ -32,17 +32,14 @@ from net import RNNModel
 from net import LSTMModel
 from net import initialize_weights
 
-# Language model
-from decoder import ViterbiDecoder
-from language_model import read_lm
-from language_model import write_lm
-
 # Evaluation
 from sklearn.metrics import confusion_matrix
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
 from confusion_matrix import sort_classes
 from confusion_matrix import plot_confusion_matrix
+from confusion_matrix import plot_phoneme_confusion_matrix
+from confusion_matrix import plot_moa_confusion_matrix
 from plot_probs import plot_outputs
 
 from tqdm import tqdm
@@ -358,20 +355,6 @@ if __name__ == '__main__':
 
     # Plot phone confusion matrix
     le_phone = get_label_encoder(label_type)
-    # plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
-
-    # Phoneme confusion matrix
-    phoneme_true = phone_to_phoneme(le_phone.inverse_transform(summary['y_true']), 39)
-    phoneme_pred = phone_to_phoneme(le_phone.inverse_transform(summary['y_pred']), 39)
-    le_phoneme = preprocessing.LabelEncoder()
-    phoneme_true = le_phoneme.fit_transform(phoneme_true)
-    phoneme_pred = le_phoneme.transform(phoneme_pred)
-    plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, get_phoneme_list())
-
-    # # Manner of articulation confusion matrixa
-    # moa_true = phone_to_moa(le_phone.inverse_transform(summary['y_true']))
-    # moa_pred = phone_to_moa(le_phone.inverse_transform(summary['y_pred']))
-    # le_moa = preprocessing.LabelEncoder()
-    # moa_true = le_moa.fit_transform(moa_true)
-    # moa_pred = le_moa.transform(moa_pred)
-    # plot_confusion_matrix(moa_true, moa_pred, le_moa, get_moa_list())
+    plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
+    plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
