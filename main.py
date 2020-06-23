@@ -191,12 +191,11 @@ def validate(model, le, label_type, file_list):
     return metrics
 
 
-def test(model, lm_type, le, label_type, file_list):
+def test(model, le, label_type, file_list):
     """ Test phoneme classification model
     
     Args:
         model (torch.nn.Module): neural network model
-        lm_type (str): language model type
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
         label_type (str): label type
         file_list (list): files in the test set
@@ -212,20 +211,6 @@ def test(model, lm_type, le, label_type, file_list):
 
     # Get the device
     device = get_device()
-
-    # Language model
-    unigram_dict = read_lm("unigram")
-    unigram_probs = torch.tensor(list(unigram_dict.values())).to(device)
-    bigram_dict = read_lm("bigram")
-    bigram_probs = torch.reshape(torch.tensor(list(bigram_dict.values())), (len(unigram_probs), len(unigram_probs))).to(device)
-
-    # Viterbi decoder
-    prior_probs = torch.reshape(unigram_probs, (1, len(unigram_probs)))
-    if lm_type is "unigram":
-        trans_mat = (torch.reshape(unigram_probs, (len(unigram_probs), 1))).repeat((1, len(unigram_probs))) # unigram
-    elif lm_type is "bigram":
-        trans_mat = bigram_probs
-    viterbi_decoder = ViterbiDecoder(prior_probs, trans_mat, model)
 
     # Get scaler
     scale_file = "features/scaler.pickle"
@@ -252,11 +237,9 @@ def test(model, lm_type, le, label_type, file_list):
             y_batch = (torch.from_numpy(y_batch)).to(device)
 
             # Get outputs and predictions
-            #outputs = model(x_batch)
-            #y_prob = torch.exp(outputs)
-            #y_pred = torch.argmax(outputs, dim=1)
-            y_pred, best_score = viterbi_decoder.decode(x_batch)
-            y_prob = torch.exp(best_score)
+            outputs = model(x_batch)
+            y_prob = torch.exp(outputs)
+            y_pred = torch.argmax(outputs, dim=1)
 
             # Update summary
             (summary['file']).append(file_list[i])
