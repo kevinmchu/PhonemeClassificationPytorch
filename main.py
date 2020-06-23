@@ -329,7 +329,6 @@ if __name__ == '__main__':
     # Parameters
     model_type = "LSTM"
     model_idx = 0
-    lm_type = "unigram"
     label_type = "phone"
     num_valid_utts = 184
 
@@ -337,31 +336,16 @@ if __name__ == '__main__':
     train_list = read_feat_list(train_feat_list)
     test_list = read_feat_list(test_feat_list)
 
-    # Language model
-    if not os.path.exists("lm/1gram.txt"):
-        write_lm(train_list, "unigram", label_type)
-
     # Split list of utterances into training and validation sets
     #valid_list, train_list = train_val_split(train_list, num_valid_utts)
 
     # Train and validate
     #train_and_validate(model_type, train_list, test_list, label_type)
 
-    # # Testing
-    # model_name = "models/" + model_type + str(model_idx)
-    # model = torch.load(model_name, map_location=torch.device('cpu'))
-    # summary = test(model, lm_type, get_label_encoder(label_type), label_type, test_list)
-    #
-    # # Save
-    # save_file = "results/" + model_type + "/" + model_type + str(model_idx) + "_" + lm_type
-    # with open(save_file, 'wb') as f:
-    #     pickle.dump(summary, f)
-
-    # Load
-    save_file = "results/" + model_type + "/" + model_type + str(model_idx) + "_" + lm_type
-    with open(save_file, 'rb') as f:
-        summary = pickle.load(f)
-
+    # Testing
+    model_name = "models/" + model_type + str(model_idx)
+    model = torch.load(model_name, map_location=torch.device('cpu'))
+    summary = test(model, get_label_encoder(label_type), label_type, test_list)
     y_prob = summary['y_prob'][0]
     y_true = summary['y_true'][0]
     #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
