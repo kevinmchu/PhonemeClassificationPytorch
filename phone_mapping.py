@@ -68,6 +68,8 @@ def get_label_encoder(label_type):
         labels = get_phone_list()
     elif label_type == "phoneme":
         labels = get_phoneme_list()
+    elif label_type == "moa":
+        labels = get_moa_list()
 
     le = preprocessing.LabelEncoder()
     le.fit(labels)

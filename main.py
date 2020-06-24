@@ -340,7 +340,7 @@ if __name__ == '__main__':
     # Parameters
     model_type = "LSTM"
     model_idx = 0
-    label_type = "phoneme"
+    label_type = "moa"
     num_valid_utts = 184
 
     # Read in feature list files
