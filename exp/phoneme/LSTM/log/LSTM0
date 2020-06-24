@@ -1,0 +1,17 @@
+INFO:root:Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss
+INFO:root:1,0.533,1.572,0.532,1.573
+INFO:root:2,0.581,1.381,0.576,1.398
+INFO:root:3,0.608,1.276,0.598,1.305
+INFO:root:4,0.622,1.215,0.609,1.255
+INFO:root:5,0.637,1.164,0.623,1.211
+INFO:root:6,0.65,1.118,0.632,1.172
+INFO:root:7,0.659,1.084,0.638,1.148
+INFO:root:8,0.665,1.057,0.643,1.122
+INFO:root:9,0.675,1.031,0.649,1.105
+INFO:root:10,0.679,1.011,0.653,1.095
+INFO:root:11,0.684,0.996,0.656,1.088
+INFO:root:12,0.689,0.978,0.661,1.073
+INFO:root:13,0.693,0.964,0.658,1.067
+INFO:root:14,0.696,0.954,0.66,1.067
+INFO:root:15,0.701,0.936,0.665,1.053
+INFO:root:Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss
