@@ -281,7 +281,7 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
             model = RNNModel(26, 185, len(le.classes_), True)
         elif model_type is "LSTM":
             model = LSTMModel(26, 140, len(le.classes_), False)
-            num_epochs = 1
+            num_epochs = 15
         elif model_type is "BLSTM":
             model = LSTMModel(26, 93, len(le.classes_), True)
             num_epochs = 20
