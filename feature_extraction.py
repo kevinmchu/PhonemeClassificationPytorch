@@ -5,6 +5,7 @@
 import numpy as np
 from sklearn import preprocessing
 from phone_mapping import phone_to_phoneme
+from phone_mapping import phone_to_moa
 
 
 def fit_normalizer(file_list, label_type):
@@ -62,6 +63,10 @@ def read_feat_file(filename, label_type):
         # Remove 'q'
         X = X[y != 'q', :]
         y = y[y != 'q']
+
+    elif label_type == 'moa':
+        y = phone_to_moa(y)
+        y = np.array(y, dtype='object')
 
     # Just MFCCs and deltas of current frame
     X = X[:, 156:182]
