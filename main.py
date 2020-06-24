@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import time
+import os
 import os.path
 import pickle
 
@@ -280,7 +281,7 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
             model = RNNModel(26, 185, len(le.classes_), True)
         elif model_type is "LSTM":
             model = LSTMModel(26, 140, len(le.classes_), False)
-            num_epochs = 15
+            num_epochs = 1
         elif model_type is "BLSTM":
             model = LSTMModel(26, 93, len(le.classes_), True)
             num_epochs = 20
@@ -299,8 +300,17 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
         # Stochastic gradient descent with user-defined learning rate and momentum
         optimizer = optim.SGD(model.parameters(), lr=learn_rate, momentum=m)
 
+        # Model directory
+        save_dir = os.path.join("exp", label_type, model_type)
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
         # Configure log file
-        logging.basicConfig(filename="log/" + model_type + str(i), filemode="w", level=logging.INFO)
+        log_dir = os.path.join(save_dir, "log")
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+
+        logging.basicConfig(filename=log_dir+"/"+model_type+str(i), filemode="w", level=logging.INFO)
         logging.info("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss")
 
         # Training
@@ -315,7 +325,11 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
                                 round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
         # Save model
-        torch.save(model, "models/" + model_type + str(i))
+        model_dir = os.path.join(save_dir, "models")
+        if not os.path.exists(model_dir):
+            os.mkdir(model_dir)
+
+        torch.save(model,model_dir+"/"+model_type+str(i))
 
 
 if __name__ == '__main__':
@@ -326,7 +340,7 @@ if __name__ == '__main__':
     # Parameters
     model_type = "LSTM"
     model_idx = 0
-    label_type = "phone"
+    label_type = "phoneme"
     num_valid_utts = 184
 
     # Read in feature list files
@@ -337,24 +351,24 @@ if __name__ == '__main__':
     #valid_list, train_list = train_val_split(train_list, num_valid_utts)
 
     # Train and validate
-    #train_and_validate(model_type, train_list, test_list, label_type)
+    train_and_validate(model_type, train_list, test_list, label_type)
 
-    # Testing
-    model_name = "models/" + model_type + str(model_idx)
-    model = torch.load(model_name, map_location=torch.device(get_device()))
-    summary = test(model, get_label_encoder(label_type), label_type, test_list)
-    y_prob = summary['y_prob'][0]
-    y_true = summary['y_true'][0]
-    #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
-    summary['y_true'] = np.concatenate(summary['y_true'])
-    summary['y_pred'] = np.concatenate(summary['y_pred'])
+    # # Testing
+    # model_name = "models/" + model_type + str(model_idx)
+    # model = torch.load(model_name, map_location=torch.device(get_device()))
+    # summary = test(model, get_label_encoder(label_type), label_type, test_list)
+    # y_prob = summary['y_prob'][0]
+    # y_true = summary['y_true'][0]
+    # #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
+    # summary['y_true'] = np.concatenate(summary['y_true'])
+    # summary['y_pred'] = np.concatenate(summary['y_pred'])
 
     # # Accuracy
     # accuracy = float(np.sum(summary['y_true'] == summary['y_pred'])) / len(summary['y_true'])
     # print("Accuracy: ", round(accuracy, 3))
 
-    # Plot phone confusion matrix
-    le_phone = get_label_encoder(label_type)
-    plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
-    plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
-    plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # # Plot phone confusion matrix
+    # le_phone = get_label_encoder(label_type)
+    # plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
+    # plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)

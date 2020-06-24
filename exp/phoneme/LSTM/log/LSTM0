@@ -1,0 +1,6 @@
+INFO:root:Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss
+INFO:root:1,0.537,1.558,0.537,1.56
+INFO:root:Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss
+INFO:root:1,0.535,1.555,0.537,1.556
+INFO:root:Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss
+INFO:root:1,0.536,1.561,0.535,1.563
