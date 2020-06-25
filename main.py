@@ -31,6 +31,7 @@ import torch.optim as optim
 from net import MLP
 from net import RNNModel
 from net import LSTMModel
+from net import GRUModel
 from net import initialize_weights
 
 # Evaluation
@@ -282,6 +283,9 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
         elif model_type is "LSTM":
             model = LSTMModel(26, 140, len(le.classes_), False)
             num_epochs = 15
+        elif model_type is "GRU":
+            model = GRUModel(26, 161, len(le.classes_), False)
+            num_epochs = 15
         elif model_type is "BLSTM":
             model = LSTMModel(26, 93, len(le.classes_), True)
             num_epochs = 20
@@ -338,9 +342,9 @@ if __name__ == '__main__':
     test_feat_list = "data/test.txt"
 
     # Parameters
-    model_type = "LSTM"
+    model_type = "GRU"
     model_idx = 0
-    label_type = "moa"
+    label_type = "phone"
     num_valid_utts = 184
 
     # Read in feature list files

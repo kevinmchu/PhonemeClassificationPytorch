@@ -135,6 +135,35 @@ class LSTMModel(nn.Module):
         return out
 
 
+class GRUModel(nn.Module):
+
+    def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
+        super(GRUModel, self).__init__()
+
+        self.gru = nn.GRU(input_size=num_features, hidden_size=num_hidden, num_layers=1, bidirectional=bidirectional)
+
+        # If bidirectional, double number of hidden units
+        if not bidirectional:
+            self.fc = nn.Linear(num_hidden, num_classes)
+        else:
+            self.fc = nn.Linear(2*num_hidden, num_classes)
+
+    def forward(self, x):
+        # Reshape features to (num_seq, num_batch, num_feats)
+        x = x.view(x.size()[0], 1, x.size()[1])
+
+        # Pass through LSTM layer
+        h, _ = self.gru(x)
+
+        # Reshape hidden features to (num_seq, num_feats)
+        h = h.view(h.size()[0], h.size()[2])
+
+        # Pass hidden features to classification layer
+        out = F.log_softmax(self.fc(h), dim=1)
+
+        return out
+
+
 def initialize_weights(m):
     """ Initialize weights from Uniform(-0.1,0.1) distribution
     as was done in Graves and Schmidhuber, 2005
