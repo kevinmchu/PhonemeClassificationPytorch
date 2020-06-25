@@ -372,3 +372,4 @@ if __name__ == '__main__':
     # plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
     # plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
     # plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # test travis
