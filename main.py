@@ -338,9 +338,9 @@ if __name__ == '__main__':
     test_feat_list = "data/test.txt"
 
     # Parameters
-    model_type = "LSTM"
+    model_type = "MLP"
     model_idx = 0
-    label_type = "moa"
+    label_type = "phoneme"
     num_valid_utts = 184
 
     # Read in feature list files
