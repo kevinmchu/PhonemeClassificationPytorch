@@ -29,6 +29,7 @@ import torch.optim as optim
 
 # Models
 from net import MLP
+from net import CNN
 from net import RNNModel
 from net import LSTMModel
 from net import GRUModel
@@ -275,6 +276,9 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
         if model_type is "MLP":
             model = MLP(26, 250, len(le.classes_))
             num_epochs = 250
+        elif model_type is "CNN":
+            model = CNN(26, (3, 3), 200, len(le.classes_))
+            num_epochs = 200
         elif model_type is "RNN":
             model = RNNModel(26, 275, len(le.classes_), False)
             num_epochs = 120

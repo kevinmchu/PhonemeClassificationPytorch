@@ -22,6 +22,34 @@ class MLP(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
+class CNN(nn.Module):
+
+    def __init__(self, num_features, kernel_size, num_hidden, num_classes):
+        super(CNN, self).__init__()
+
+        self.kernel_size = kernel_size
+        self.conv1 = nn.Conv2d(2, 10, kernel_size=kernel_size)
+
+        self.fc1 = nn.Linear(num_features, num_hidden)
+        self.fc2 = nn.Linear(num_hidden, num_classes)
+
+    def forward(self, x):
+        # Add zero padding in time
+        x = torch.cat((torch.zeros((self.kernel_size[0]-1, x.size()[1]), dtype=torch.float), x), dim=0)
+
+        # Reformat into feature maps
+        x = torch.transpose(x, 0, 1)
+        x = x.view(1, 2, x.size()[0], x.size()[1])
+
+        # Pass through network
+        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+
+        x = torch.sigmoid(self.fc1(x))
+        x = self.fc2(x)
+
+        return F.log_softmax(x, dim=1)
+
+
 # class RNNModel(nn.Module):
 #
 #     def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
