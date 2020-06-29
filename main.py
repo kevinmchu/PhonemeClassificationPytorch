@@ -270,7 +270,7 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
     # Label encoder
     le = get_label_encoder(label_type)
 
-    for i in range(3):
+    for i in range(1):
 
         # Instantiate the network
         if model_type is "MLP":
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     # Parameters
     model_type = "LSTM"
     model_idx = 0
-    label_type = "phone"
+    label_type = "moa"
     num_valid_utts = 184
 
     # Read in feature list files
@@ -359,25 +359,25 @@ if __name__ == '__main__':
     #valid_list, train_list = train_val_split(train_list, num_valid_utts)
 
     # Train and validate
-    #train_and_validate(model_type, train_list, test_list, label_type)
+    train_and_validate(model_type, train_list, test_list, label_type)
 
-    # Testing
-    model_name = "exp/" + label_type + "/" + model_type + "/models/" + model_type + str(model_idx)
-    model = torch.load(model_name, map_location=torch.device(get_device()))
-    summary = test(model, get_label_encoder(label_type), label_type, test_list)
-    y_prob = summary['y_prob'][0]
-    y_true = summary['y_true'][0]
-    #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
-    summary['y_true'] = np.concatenate(summary['y_true'])
-    summary['y_pred'] = np.concatenate(summary['y_pred'])
+    # # Testing
+    # model_name = "exp/" + label_type + "/" + model_type + "/models/" + model_type + str(model_idx)
+    # model = torch.load(model_name, map_location=torch.device(get_device()))
+    # summary = test(model, get_label_encoder(label_type), label_type, test_list)
+    # y_prob = summary['y_prob'][0]
+    # y_true = summary['y_true'][0]
+    # #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
+    # summary['y_true'] = np.concatenate(summary['y_true'])
+    # summary['y_pred'] = np.concatenate(summary['y_pred'])
 
     # # Accuracy
     # accuracy = float(np.sum(summary['y_true'] == summary['y_pred'])) / len(summary['y_true'])
     # print("Accuracy: ", round(accuracy, 3))
 
-    # Plot phone confusion matrix
-    le_phone = get_label_encoder(label_type)
-    plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
-    plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
-    plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # # Plot phone confusion matrix
+    # le_phone = get_label_encoder(label_type)
+    # plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
+    # plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
 
