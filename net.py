@@ -24,9 +24,11 @@ class MLP(nn.Module):
 
 class CNN(nn.Module):
 
-    def __init__(self, num_features, kernel_size, num_hidden, num_classes):
+    def __init__(self, num_features, window_size, kernel_size, num_hidden, num_classes):
         super(CNN, self).__init__()
 
+        self.num_features = num_features
+        self.window_size = window_size
         self.kernel_size = kernel_size
         self.conv1 = nn.Conv2d(2, 10, kernel_size=kernel_size)
 
@@ -35,11 +37,18 @@ class CNN(nn.Module):
 
     def forward(self, x):
         # Add zero padding in time
-        x = torch.cat((torch.zeros((self.kernel_size[0]-1, x.size()[1]), dtype=torch.float), x), dim=0)
+        x = torch.cat((torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float), x), dim=0)
 
-        # Reformat into feature maps
+        # Separate MFCCs and deltas
         x = torch.transpose(x, 0, 1)
-        x = x.view(1, 2, x.size()[0], x.size()[1])
+        x = x.view(1, 2, int(self.num_features/2), x.size()[1])
+
+        # Format into feature maps
+        batch_sz = x.size()[3] - self.window_size + 1
+        idx = torch.linspace(0, self.window_size-1, self.window_size)
+        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
+        idx = idx.to(int)
+        x = x[:, :, :, idx].view(batch_sz, 2, int(self.num_features/2), self.window_size)
 
         # Pass through network
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))

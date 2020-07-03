@@ -277,7 +277,7 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
             model = MLP(26, 250, len(le.classes_))
             num_epochs = 250
         elif model_type is "CNN":
-            model = CNN(26, (3, 3), 200, len(le.classes_))
+            model = CNN(26, 10, (3, 3), 200, len(le.classes_))
             num_epochs = 200
         elif model_type is "RNN":
             model = RNNModel(26, 275, len(le.classes_), False)
@@ -346,9 +346,9 @@ if __name__ == '__main__':
     test_feat_list = "data/test.txt"
 
     # Parameters
-    model_type = "LSTM"
+    model_type = "CNN"
     model_idx = 0
-    label_type = "moa"
+    label_type = "phone"
     num_valid_utts = 184
 
     # Read in feature list files
