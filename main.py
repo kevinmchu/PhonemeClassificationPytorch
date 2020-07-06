@@ -277,7 +277,7 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
             model = MLP(26, 250, len(le.classes_))
             num_epochs = 250
         elif model_type is "CNN":
-            model = CNN(26, 10, (3, 3), 200, len(le.classes_))
+            model = CNN(26, 40, 10, (3, 3), (2, 2), 116, len(le.classes_))
             num_epochs = 200
         elif model_type is "RNN":
             model = RNNModel(26, 275, len(le.classes_), False)
