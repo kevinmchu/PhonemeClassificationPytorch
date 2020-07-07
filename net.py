@@ -54,7 +54,8 @@ class CNN(nn.Module):
         idx = torch.linspace(0, self.window_size-1, self.window_size)
         idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
         idx = idx.to(int)
-        x = x[:, :, :, idx].view(batch_sz, 2, int(self.num_features/2), self.window_size)
+        x = x[0, :, :, idx]#.view(batch_sz, 2, int(self.num_features/2), self.window_size)
+        x = x.permute(2, 0, 1, 3)
 
         # Pass through network
         x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
