@@ -342,8 +342,8 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
 
 if __name__ == '__main__':
     # Necessary files
-    train_feat_list = "data/train_gs.txt"
-    test_feat_list = "data/test.txt"
+    train_feat_list = "data/train/feats.txt"
+    test_feat_list = "data/test/feats.txt"
 
     # Parameters
     model_type = "CNN"

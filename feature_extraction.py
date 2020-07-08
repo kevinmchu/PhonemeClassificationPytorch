@@ -2,7 +2,6 @@
 # Author: Kevin Chu
 # Last Modified: 06/11/2020
 
-import matlab.engine
 import numpy as np
 from sklearn import preprocessing
 from phone_mapping import phone_to_phoneme
