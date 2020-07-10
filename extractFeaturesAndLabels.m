@@ -27,7 +27,7 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     fclose(fid);
     
     % Create feature directory
-    generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo);
+    featFiles = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, wavInfo);
     
     % Conditions
     allConditions = cell(numel(conditions),1);
@@ -41,13 +41,12 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     for i = 1:numel(wavInfo)
         fprintf('Extracting features for file %d out of %d\n', i, numel(wavInfo));
         phnFile = strrep(wavInfo{i}, '.WAV', '.PHN');
-        featFile = strrep(wavInfo{i}, strcat(timit_dir, filesep, upper(dataset)), feat_dir);
-        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, fs, frame_len, frame_shift, featFile, allConditions{i});
+        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, fs, frame_len, frame_shift, featFiles{i}, allConditions{i});
     end
     
 end
 
-function generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo)
+function featInfo = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, wavInfo)
     % Create directories for feature files as well as info file
     %
     % Args:
@@ -79,7 +78,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo)
     end
     
     % Create feat info file
-    featInfo = cellfun(@(c)strrep(c, strcat(timit_dir, filesep, lower(dataset)), feat_dir), wavInfo, 'UniformOutput', false);
+    featInfo = cellfun(@(c)strrep(c, strcat(timit_dir, filesep, upper(dataset)), feat_dir), wavInfo, 'UniformOutput', false);
     featInfo = cellfun(@(c)strrep(c, '.WAV', '.txt'), featInfo, 'UniformOutput', false);
     outFile = strcat('data', filesep, dataset, filesep, feat_type, '.txt');
     fid = fopen(outFile, 'w');
@@ -87,7 +86,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo)
     fclose(fid);
     
     % Create subdirectories for dialect regions and speakers
-    subdirs = cellfun(@(c)regexprep(c, '\w*\d*\.WAV', ''), featInfo, 'UniformOutput', false);
+    subdirs = cellfun(@(c)regexprep(c, '\w*\d*\.txt', ''), featInfo, 'UniformOutput', false);
     subdirs = unique(subdirs);
     for i = 1:numel(subdirs)
         if ~isfolder(subdirs{i})
@@ -216,6 +215,23 @@ function labels = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condit
     temp = cellfun(@(a,b,c)repmat({c},b-a+1,1),alignments(:,1),alignments(:,2),alignments(:,3),'UniformOutput',false);
     labels = vertcat(temp{:});    
 
+end
+
+function alignments = readPhn(phnFile)
+    % Reads in alignments from phn file
+    %
+    % Args:
+    %   phnFile (str): file with phoneme labels
+    %
+    % Returns:
+    %   alignments (double matrix): contains beginning and end times of
+    %   each phoneme
+
+    fid = fopen(phnFile);
+    C = textscan(fid, '%s');
+    fclose(fid);
+    alignments = reshape(C{1},3,size(C{1},1)/3)';
+    alignments(:,1:2) = cellfun(@str2num, alignments(:,1:2), 'UniformOutput', false);
 end
 
 function newAlignments = correctAlignments(alignments, rirFile)
