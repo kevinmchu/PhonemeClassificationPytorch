@@ -1,8 +1,8 @@
 % extractFeaturesAndLabels.m
 % Author: Kevin Chu
-% Last Modified: 07/08/2020
+% Last Modified: 07/10/2020
 
-function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, conditions)
+function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, conditions, timit_dir, feat_dir, feat_type)
     % Extracts the features and labels for files in the current dataset,
     % and outputs the information in a feature file
     %
@@ -13,16 +13,21 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     %   sec
     %   -dataset (str): specifies whether training, development, or testing
     %   set
+    %   -feat_dir (str): directory in which to save the features
+    %   -feat_type (str): type of feature to extract
     %
     % Returns:
     %   none
 
     % Read in wav info
-    wavInfoFile = strcat('data', filesep, dataset, '.txt');
+    wavInfoFile = strcat('data', filesep, dataset, filesep, 'wav.txt');
     fid = fopen(wavInfoFile, 'r');
     C = textscan(fid, '%s');
     wavInfo = C{1,1};
     fclose(fid);
+    
+    % Create feature directory
+    generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo);
     
     % Conditions
     allConditions = cell(numel(conditions),1);
@@ -36,10 +41,60 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     for i = 1:numel(wavInfo)
         fprintf('Extracting features for file %d out of %d\n', i, numel(wavInfo));
         phnFile = strrep(wavInfo{i}, '.WAV', '.PHN');
-        featFile = strrep(wavInfo{i}, '.WAV', '_mfcc.txt');
+        featFile = strrep(wavInfo{i}, strcat(timit_dir, filesep, upper(dataset)), feat_dir);
         extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, fs, frame_len, frame_shift, featFile, allConditions{i});
     end
     
+end
+
+function generateFeatInfo(timit_dir, feat_dir, dataset, feat_type, wavInfo)
+    % Create directories for feature files as well as info file
+    %
+    % Args:
+    %   -timit_dir (str): directory with TIMIT sentences
+    %   -feat_dir (str): directory with extracted features
+    %   -dataset (str): training, development, or testing
+    %   -feat_type (str): mfcc or mspec
+    %   -wavInfo (cell): list of wav files
+    %
+    % Returns:
+    %   -none
+
+    % Create base directory to hold features
+    feat_dir = strcat(feat_dir, filesep, feat_type);
+    
+    if isequal(extractfield(conditions, 'condition'), {'anechoic'})
+        feat_dir = strcat(feat_dir, filesep, dataset, '_anechoic');
+    else
+        if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
+            feat_dir = strcat(feat_dir, filesep, dataset, '_multicondition');
+        else
+            condition = extractfield(conditions, 'condition');
+            feat_dir = strcat(feat_dir, filesep, dataset, '_', condition{1});
+        end
+    end
+    
+    if ~isfolder(feat_dir)
+        mkdir(feat_dir);
+    end
+    
+    % Create feat info file
+    featInfo = cellfun(@(c)strrep(c, strcat(timit_dir, filesep, lower(dataset)), feat_dir), wavInfo, 'UniformOutput', false);
+    featInfo = cellfun(@(c)strrep(c, '.WAV', '.txt'), featInfo, 'UniformOutput', false);
+    outFile = strcat('data', filesep, dataset, filesep, feat_type, '.txt');
+    fid = fopen(outFile, 'w');
+    fprintf(fid, '%s\n', featInfo{:});
+    fclose(fid);
+    
+    % Create subdirectories for dialect regions and speakers
+    subdirs = cellfun(@(c)regexprep(c, '\w*\d*\.WAV', ''), featInfo, 'UniformOutput', false);
+    subdirs = unique(subdirs);
+    for i = 1:numel(subdirs)
+        if ~isfolder(subdirs{i})
+            mkdir(subdirs{i});
+        end
+    end
+
 end
 
 function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, fs, frame_len, frame_shift, featFile, condition)
@@ -206,6 +261,28 @@ function newAlignments = correctAlignments(alignments, rirFile)
     % original end alignment
     newAlignments{end,2} = alignments{end,2};
     
+end
+
+function delay = calculateReverbDelay(air_info, fs)
+    % Calculates delay of reverberant signal wrt anechoic signal
+    %
+    % Args:
+    %   air_info (struct): contains info about the rir
+    %   fs (double): sampling frequency in Hz
+    %
+    % Returns:
+    %   delay (double): delay in samples
+    
+    c = 343; % speed of sound, m/s
+    switch air_info.room
+        case 'aula_carolina'
+            delay = round(air_info.distance/c * fs);
+        case {'booth', 'lecture', 'meeting', 'office'}
+            delay = round((air_info.distance/100)/c * fs); % delay in samples
+        case 'stairway'
+            delay = round(air_info.d_speaker_mic/c * fs);
+    end
+
 end
 
 function alignmentsNew = samples2Frames(alignments, frame_len, frame_shift, fs)
