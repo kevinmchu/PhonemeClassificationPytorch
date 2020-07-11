@@ -2,7 +2,7 @@
 % Author: Kevin Chu
 % Last Modified: 07/10/2020
 
-function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, conditions, timit_dir, feat_dir, feat_type)
+function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, dataset, conditions)
     % Extracts the features and labels for files in the current dataset,
     % and outputs the information in a feature file
     %
@@ -18,16 +18,34 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     %
     % Returns:
     %   none
+    
+    % Condition
+    if isequal(extractfield(conditions, 'condition'), {'anechoic'})
+        condition = 'anechoic';
+    else
+        if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
+            condition = 'rev';
+        else
+            condition = extractfield(conditions, 'condition');
+            condition = strsplit(condition{1}, filesep);
+            condition = strrep(condition{end}, '.mat', '');
+            condition = strrep(condition, 'air_binaural_', '');
+        end
+    end
 
     % Read in wav info
-    wavInfoFile = strcat('data', filesep, dataset, filesep, 'wav.txt');
+    wavInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, 'wav.txt');
     fid = fopen(wavInfoFile, 'r');
     C = textscan(fid, '%s');
     wavInfo = C{1,1};
     fclose(fid);
     
-    % Create feature directory
-    featFiles = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, wavInfo);
+    % Read in feat info
+    featInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
+    fid = fopen(featInfoFile, 'r');
+    C = textscan(fid, '%s');
+    featFiles = C{1,1};
+    fclose(fid);
     
     % Conditions
     allConditions = cell(numel(conditions),1);
@@ -41,62 +59,12 @@ function extractFeaturesAndLabels(fs, frame_len, frame_shift, dataset, condition
     for i = 1:numel(wavInfo)
         fprintf('Extracting features for file %d out of %d\n', i, numel(wavInfo));
         phnFile = strrep(wavInfo{i}, '.WAV', '.PHN');
-        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, fs, frame_len, frame_shift, featFiles{i}, allConditions{i});
+        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, featFiles{i}, allConditions{i});
     end
     
 end
 
-function featInfo = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, wavInfo)
-    % Create directories for feature files as well as info file
-    %
-    % Args:
-    %   -timit_dir (str): directory with TIMIT sentences
-    %   -feat_dir (str): directory with extracted features
-    %   -dataset (str): training, development, or testing
-    %   -feat_type (str): mfcc or mspec
-    %   -wavInfo (cell): list of wav files
-    %
-    % Returns:
-    %   -none
-
-    % Create base directory to hold features
-    feat_dir = strcat(feat_dir, filesep, feat_type);
-    
-    if isequal(extractfield(conditions, 'condition'), {'anechoic'})
-        feat_dir = strcat(feat_dir, filesep, dataset, '_anechoic');
-    else
-        if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
-            feat_dir = strcat(feat_dir, filesep, dataset, '_multicondition');
-        else
-            condition = extractfield(conditions, 'condition');
-            feat_dir = strcat(feat_dir, filesep, dataset, '_', condition{1});
-        end
-    end
-    
-    if ~isfolder(feat_dir)
-        mkdir(feat_dir);
-    end
-    
-    % Create feat info file
-    featInfo = cellfun(@(c)strrep(c, strcat(timit_dir, filesep, upper(dataset)), feat_dir), wavInfo, 'UniformOutput', false);
-    featInfo = cellfun(@(c)strrep(c, '.WAV', '.txt'), featInfo, 'UniformOutput', false);
-    outFile = strcat('data', filesep, dataset, filesep, feat_type, '.txt');
-    fid = fopen(outFile, 'w');
-    fprintf(fid, '%s\n', featInfo{:});
-    fclose(fid);
-    
-    % Create subdirectories for dialect regions and speakers
-    subdirs = cellfun(@(c)regexprep(c, '\w*\d*\.txt', ''), featInfo, 'UniformOutput', false);
-    subdirs = unique(subdirs);
-    for i = 1:numel(subdirs)
-        if ~isfolder(subdirs{i})
-            mkdir(subdirs{i});
-        end
-    end
-
-end
-
-function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, fs, frame_len, frame_shift, featFile, condition)
+function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, featFile, condition)
     % Extracts features and labels for a single wav file
     %
     % Args:
@@ -119,7 +87,7 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, fs, frame_len, fra
     end
     
     % Extract features and labels
-    x = extractFeatures(wav, fs, frame_len, frame_shift);
+    x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
     y = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condition);
     featsAndLabs = [num2cell(x),y];
     featsAndLabs = featsAndLabs';
@@ -177,7 +145,7 @@ function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(..
 
 end
 
-function x = extractFeatures(wav, fs, frame_len, frame_shift)
+function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy)
     % Extracts features for a single file
     %
     % Args:
@@ -191,7 +159,17 @@ function x = extractFeatures(wav, fs, frame_len, frame_shift)
     %   -x (nxnFeatures matrix): matrix of features
 
     % Splicing parameters
-    [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',12,'DeltaWindowLength',5);
+    switch feat_type
+        case 'mfcc'
+            if use_energy
+                [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'DeltaWindowLength',2);
+            else
+                [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore','DeltaWindowLength',2);
+            end
+        otherwise
+            error('Invalid feature type.\n');
+    end
+    
     x = [coeffs,delta,deltaDelta];
     
 end
