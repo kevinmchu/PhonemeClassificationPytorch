@@ -342,11 +342,11 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
 
 if __name__ == '__main__':
     # Necessary files
-    train_feat_list = "data/train/mfcc.txt"
-    test_feat_list = "data/test/mfcc.txt"
+    train_feat_list = "data/train_anechoic/mfcc.txt"
+    test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Parameters
-    model_type = "CNN"
+    model_type = "LSTM"
     model_idx = 0
     label_type = "phone"
     num_valid_utts = 184
