@@ -343,23 +343,21 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
 if __name__ == '__main__':
     # Necessary files
     train_feat_list = "data/train_anechoic/mfcc.txt"
+    dev_feat_list = "data/dev_anechoic/mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Parameters
     model_type = "LSTM"
     model_idx = 0
     label_type = "phone"
-    num_valid_utts = 184
 
     # Read in feature list files
     train_list = read_feat_list(train_feat_list)
+    dev_list = read_feat_list(dev_feat_list)
     test_list = read_feat_list(test_feat_list)
 
-    # Split list of utterances into training and validation sets
-    #valid_list, train_list = train_val_split(train_list, num_valid_utts)
-
     # Train and validate
-    train_and_validate(model_type, train_list, test_list, label_type)
+    train_and_validate(model_type, train_list, dev_list, label_type)
 
     # # Testing
     # model_name = "exp/" + label_type + "/" + model_type + "/models/" + model_type + str(model_idx)
