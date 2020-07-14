@@ -166,11 +166,13 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             else
                 [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore','DeltaWindowLength',2);
             end
+            x = [coeffs,delta,deltaDelta];
+        case 'mspec'
+            coeffs = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
+            x = log(coeffs');
         otherwise
             error('Invalid feature type.\n');
     end
-    
-    x = [coeffs,delta,deltaDelta];
     
 end
 

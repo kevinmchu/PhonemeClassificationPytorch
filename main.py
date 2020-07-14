@@ -5,6 +5,7 @@ import time
 import os
 import os.path
 import pickle
+from pathlib import Path
 
 # Features
 from feature_extraction import fit_normalizer
@@ -297,8 +298,7 @@ def train_and_validate(conf_file):
     for i in range(1):
         # Model directory
         model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
-        if not os.path.exists(model_dir):
-            os.mkdir(model_dir)
+        Path(model_dir).mkdir(parents=True, exist_ok=True)
 
         # Copy config file
         copyfile(conf_file, (conf_file.replace("conf/", model_dir + "/")).replace(conf_file.split("/")[1], "conf.txt"))
@@ -352,7 +352,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_gs.txt"
+    conf_file = "conf/LSTM_anechoic_mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Train and validate

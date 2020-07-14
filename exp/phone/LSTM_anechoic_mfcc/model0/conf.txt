@@ -1,0 +1,16 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_features = 39
+num_hidden = 140
+num_classes = 61
+
+[Training]
+num_epochs = 15
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phone
+
+[Datasets]
+training = data/train_anechoic/mfcc.txt
+development = data/dev_anechoic/mfcc.txt

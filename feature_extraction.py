@@ -69,6 +69,6 @@ def read_feat_file(filename, label_type):
         y = np.array(y, dtype='object')
 
     # Just MFCCs and deltas of current frame
-    X = X[:, 0:26]
+    # X = X[:, 0:26]
     
     return X, y
