@@ -1,0 +1,15 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_features = 26
+num_hidden = 140
+num_output = 61
+
+[Training]
+num_epochs = 15
+learning_rate = 1e-5
+momentum = 0.9
+
+[Datasets]
+training = train_anechoic
+development = dev_anechoic

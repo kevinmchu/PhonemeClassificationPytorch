@@ -1,0 +1,18 @@
+[Architecture]
+model_type = CNN
+num_features = 26
+num_feature_maps = 40
+window_size = 10
+kernel_size = (3,3)
+max_pooling = (2,2)
+num_hidden = 116
+num_output = 61
+
+[Training]
+num_epochs = 200
+learning_rate = 1e-5
+momentum = 0.9
+
+[Datasets]
+training = train_anechoic
+development = dev_anechoic

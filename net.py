@@ -66,58 +66,6 @@ class CNN(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-# class RNNModel(nn.Module):
-#
-#     def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
-#         super(RNNModel, self).__init__()
-#
-#         # Properties
-#         self.num_hidden = num_hidden
-#         self.bidirectional = bidirectional
-#
-#         # Inputs to the hidden layer
-#         self.ih_f = nn.Linear(num_features, self.num_hidden)
-#         self.hh_f = nn.Linear(self.num_hidden, self.num_hidden)
-#
-#         # Add backward hidden layer for bidirectional nets
-#         if self.bidirectional:
-#             self.ih_b = nn.Linear(num_features, self.num_hidden)
-#             self.hh_b = nn.Linear(self.num_hidden, self.num_hidden)
-#             self.fc = nn.Linear(2*self.num_hidden, num_classes)
-#         else:
-#             self.fc = nn.Linear(self.num_hidden, num_classes)
-#
-#     def forward(self, x):
-#         if not self.bidirectional:
-#             h = self.unidirectional_pass(x)
-#         else:
-#             h_forward = self.unidirectional_pass(x)
-#             h_backward = self.unidirectional_pass(x, "backward")
-#             h = torch.cat((h_forward, h_backward), 1)
-#
-#         # Pass to output layer
-#         out = self.fc(h)
-#         out = F.log_softmax(out, dim=1)
-#
-#         return out
-#
-#     def unidirectional_pass(self, x, direction="forward"):
-#         # Hidden unit activations
-#         # First row contains initial hidden activations
-#         h = torch.zeros(x.size()[0]+1, self.num_hidden)
-#         #h = h.to(get_device())
-#
-#         # Recursively calculate hidden unit activations
-#         for i in range(1, x.size()[0]+1):
-#             if direction is "forward":
-#                 h[i, :] = torch.sigmoid(self.ih_f(x[i-1, :]) + self.hh_f(h[i-1, :].clone()))
-#             else:
-#                 h[i, :] = torch.sigmoid(self.ih_b(x[-i, :]) + self.hh_b(h[i-1, :].clone()))
-#
-#         # Ignore h0 activations
-#         return h[1:, :]
-
-
 class RNNModel(nn.Module):
 
     def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
