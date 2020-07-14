@@ -200,3 +200,4 @@ def initialize_network(conf_dict):
     model.apply(initialize_weights)
 
     return model
+
