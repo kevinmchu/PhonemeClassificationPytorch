@@ -28,12 +28,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # Models
-from net import MLP
-from net import CNN
-from net import RNNModel
-from net import LSTMModel
-from net import GRUModel
-from net import initialize_weights
+from net import initialize_network
 
 # Evaluation
 from sklearn.metrics import confusion_matrix
@@ -47,6 +42,7 @@ from plot_probs import plot_outputs
 
 from tqdm import tqdm
 import logging
+import re
 
 def get_device():
     """
@@ -250,7 +246,37 @@ def test(model, le, label_type, file_list):
     return summary
 
 
-def train_and_validate(model_type, train_list, valid_list, label_type):
+def read_conf(conf_file):
+    with open(conf_file, "r") as file_obj:
+        conf = file_obj.readlines()
+
+    conf = list(map(lambda x: x.replace("\n", ""), conf))
+
+    # Convert conf to dict
+    conf_dict = {}
+    for line in conf:
+        if "=" in line:
+            contents = line.split(" = ")
+            try:
+                # Ints
+                if "num" in contents[0]:
+                    conf_dict[contents[0]] = int(contents[1])
+                # Floats
+                else:
+                    conf_dict[contents[0]] = float(contents[1])
+            except ValueError:
+                # Tuple
+                if re.match("\(\d*,\d*\)", contents[1]):
+                    temp = re.sub("\(|\)", "", contents[1]).split(",")
+                    conf_dict[contents[0]] = (int(temp[0]), int(temp[1]))
+                # String
+                else:
+                    conf_dict[contents[0]] = contents[1]
+
+    return conf_dict
+
+
+def train_and_validate(conf_file):
     """ Train and evaluate a phoneme classification model
 
     Args:
@@ -260,104 +286,65 @@ def train_and_validate(model_type, train_list, valid_list, label_type):
         label_type (str): phone or phoneme
 
     """
-    # Get standard scaler
-    scale_file = "features/scaler.pickle"
-    if not os.path.exists(scale_file):
-        scaler = fit_normalizer(train_list, label_type)
-        with open(scale_file, 'wb') as f:
-            pickle.dump(scaler, f)
+    # Read in conf file
+    conf_dict = read_conf(conf_file)
 
     # Label encoder
-    le = get_label_encoder(label_type)
+    le = get_label_encoder(conf_dict["label_type"])
 
     for i in range(1):
+        # Model directory
+        model_dir = os.path.join("exp", conf_dict["label_type"], conf_file.replace(".txt", ""), "model" + str(i))
+        if not os.path.exists(model_dir):
+            os.mkdir(model_dir)
+
+        # Configure log file
+        logging.basicConfig(filename=model_dir+"training_curves", filemode="w", level=logging.INFO)
+        logging.info("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss")
 
         # Instantiate the network
-        if model_type is "MLP":
-            model = MLP(26, 250, len(le.classes_))
-            num_epochs = 250
-        elif model_type is "CNN":
-            model = CNN(26, 40, 10, (3, 3), (2, 2), 116, len(le.classes_))
-            num_epochs = 200
-        elif model_type is "RNN":
-            model = RNNModel(26, 275, len(le.classes_), False)
-            num_epochs = 120
-        elif model_type is "BRNN":
-            model = RNNModel(26, 185, len(le.classes_), True)
-        elif model_type is "LSTM":
-            model = LSTMModel(26, 140, len(le.classes_), False)
-            num_epochs = 15
-        elif model_type is "GRU":
-            model = GRUModel(26, 161, len(le.classes_), False)
-            num_epochs = 15
-        elif model_type is "BLSTM":
-            model = LSTMModel(26, 93, len(le.classes_), True)
-            num_epochs = 20
-
-        # Initialize weights
-        model.apply(initialize_weights)
+        model = initialize_network(conf_dict)
 
         # Send network to GPU (if applicable)
         device = get_device()
         model.to(device)
 
-        # Training parameters
-        learn_rate = 1e-5
-        m = 0.9
-
         # Stochastic gradient descent with user-defined learning rate and momentum
-        optimizer = optim.SGD(model.parameters(), lr=learn_rate, momentum=m)
+        optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
 
-        # Model directory
-        save_dir = os.path.join("exp", label_type, model_type)
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
+        # Read in feature files
+        train_list = read_feat_list(conf_dict["training"])
+        valid_list = read_feat_list(conf_dict["development"])
 
-        # Configure log file
-        log_dir = os.path.join(save_dir, "log")
-        if not os.path.exists(log_dir):
-            os.mkdir(log_dir)
-
-        logging.basicConfig(filename=log_dir+"/"+model_type+str(i), filemode="w", level=logging.INFO)
-        logging.info("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss")
+        # Get standard scaler
+        scale_file = model_dir + "/scaler.pickle"
+        if not os.path.exists(scale_file):
+            scaler = fit_normalizer(train_list, conf_dict["label_type"])
+            with open(scale_file, 'wb') as f:
+                pickle.dump(scaler, f)
 
         # Training
         print("Training")
-        for epoch in tqdm(range(num_epochs)):
-            train(model, optimizer, le, label_type, train_list)
-            train_metrics = validate(model, le, label_type, train_list)
-            valid_metrics = validate(model, le, label_type, valid_list)
+        for epoch in tqdm(range(conf_dict["num_epochs"])):
+            train(model, optimizer, le, conf_dict["label_type"], train_list)
+            train_metrics = validate(model, le, conf_dict["label_type"], train_list)
+            valid_metrics = validate(model, le, conf_dict["label_type"], valid_list)
 
             logging.info("{},{},{},{},{}".
                          format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
                                 round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
         # Save model
-        model_dir = os.path.join(save_dir, "models")
-        if not os.path.exists(model_dir):
-            os.mkdir(model_dir)
-
-        torch.save(model,model_dir+"/"+model_type+str(i))
+        torch.save(model, model_dir + "/model")
 
 
 if __name__ == '__main__':
     # Necessary files
-    train_feat_list = "data/train_anechoic/mfcc.txt"
-    dev_feat_list = "data/dev_anechoic/mfcc.txt"
+    conf_file = "conf/CNN_anechoic_mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
-    # Parameters
-    model_type = "LSTM"
-    model_idx = 0
-    label_type = "phone"
-
-    # Read in feature list files
-    train_list = read_feat_list(train_feat_list)
-    dev_list = read_feat_list(dev_feat_list)
-    test_list = read_feat_list(test_feat_list)
-
     # Train and validate
-    train_and_validate(model_type, train_list, dev_list, label_type)
+    train_and_validate(conf_file)
 
     # # Testing
     # model_name = "exp/" + label_type + "/" + model_type + "/models/" + model_type + str(model_idx)

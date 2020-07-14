@@ -1,12 +1,12 @@
 [Architecture]
-model_type = LSTM
-bidirectional = False
+model_type = RNN
+bidirectional = True
 num_features = 26
-num_hidden = 140
+num_hidden = 185
 num_output = 61
 
 [Training]
-num_epochs = 15
+num_epochs = 20
 learning_rate = 1e-5
 momentum = 0.9
 label_type = phone

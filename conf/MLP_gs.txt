@@ -8,7 +8,8 @@ num_output = 61
 num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
+label_type = phone
 
 [Datasets]
-training = train_anechoic
-development = dev_anechoic
+training = data/train_gs.txt
+development = data/valid_gs.txt
