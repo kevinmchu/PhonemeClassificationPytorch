@@ -3,7 +3,7 @@ model_type = GRU
 bidirectional = False
 num_features = 26
 num_hidden = 161
-num_output = 61
+num_classes = 61
 
 [Training]
 num_epochs = 15

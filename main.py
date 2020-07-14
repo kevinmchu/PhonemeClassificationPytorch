@@ -43,6 +43,7 @@ from plot_probs import plot_outputs
 from tqdm import tqdm
 import logging
 import re
+from shutil import copyfile
 
 def get_device():
     """
@@ -58,7 +59,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, label_type, file_list):
+def train(model, optimizer, le, label_type, file_list, scale_file):
     """ Train a phoneme classification model
     
     Args:
@@ -79,7 +80,6 @@ def train(model, optimizer, le, label_type, file_list):
     device = get_device()
 
     # Get scaler
-    scale_file = "features/scaler.pickle"
     with open(scale_file, 'rb') as f:
         scaler = pickle.load(f)
 
@@ -119,7 +119,7 @@ def train(model, optimizer, le, label_type, file_list):
         optimizer.step()
 
 
-def validate(model, le, label_type, file_list):
+def validate(model, le, label_type, file_list, scale_file):
     """ Validate phoneme classification model
     
     Args:
@@ -147,7 +147,6 @@ def validate(model, le, label_type, file_list):
     device = get_device()
 
     # Get scaler
-    scale_file = "features/scaler.pickle"
     with open(scale_file, 'rb') as f:
         scaler = pickle.load(f)
 
@@ -269,6 +268,9 @@ def read_conf(conf_file):
                 if re.match("\(\d*,\d*\)", contents[1]):
                     temp = re.sub("\(|\)", "", contents[1]).split(",")
                     conf_dict[contents[0]] = (int(temp[0]), int(temp[1]))
+                # Boolean
+                elif contents[1] == "True" or contents[1] == "False":
+                    conf_dict[contents[0]] = contents[1] == "True"
                 # String
                 else:
                     conf_dict[contents[0]] = contents[1]
@@ -294,15 +296,18 @@ def train_and_validate(conf_file):
 
     for i in range(1):
         # Model directory
-        model_dir = os.path.join("exp", conf_dict["label_type"], conf_file.replace(".txt", ""), "model" + str(i))
+        model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
         if not os.path.exists(model_dir):
             os.mkdir(model_dir)
 
+        # Copy config file
+        copyfile(conf_file, (conf_file.replace("conf/", model_dir + "/")).replace(conf_file.split("/")[1], "conf.txt"))
+
         # Configure log file
-        logging.basicConfig(filename=model_dir+"training_curves", filemode="w", level=logging.INFO)
-        logging.info("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss")
+        logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
         # Instantiate the network
+        logging.info("Initializing model")
         model = initialize_network(conf_dict)
 
         # Send network to GPU (if applicable)
@@ -318,21 +323,28 @@ def train_and_validate(conf_file):
 
         # Get standard scaler
         scale_file = model_dir + "/scaler.pickle"
-        if not os.path.exists(scale_file):
-            scaler = fit_normalizer(train_list, conf_dict["label_type"])
-            with open(scale_file, 'wb') as f:
-                pickle.dump(scaler, f)
+        scaler = fit_normalizer(train_list, conf_dict["label_type"])
+        with open(scale_file, 'wb') as f:
+            pickle.dump(scaler, f)
+
+        # Training curves
+        training_curves = model_dir + "/training_curves"
+        with open(training_curves, "w") as file_obj:
+            file_obj.write("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss\n")
 
         # Training
-        print("Training")
+        logging.info("Training")
         for epoch in tqdm(range(conf_dict["num_epochs"])):
-            train(model, optimizer, le, conf_dict["label_type"], train_list)
-            train_metrics = validate(model, le, conf_dict["label_type"], train_list)
-            valid_metrics = validate(model, le, conf_dict["label_type"], valid_list)
+            with open(training_curves, "a") as file_obj:
+                logging.info("Epoch: {}".format(epoch+1))
 
-            logging.info("{},{},{},{},{}".
-                         format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
-                                round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
+                train(model, optimizer, le, conf_dict["label_type"], train_list, scale_file)
+                train_metrics = validate(model, le, conf_dict["label_type"], train_list, scale_file)
+                valid_metrics = validate(model, le, conf_dict["label_type"], valid_list, scale_file)
+
+                file_obj.write("{},{},{},{},{}\n".
+                                format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
+                                        round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
         # Save model
         torch.save(model, model_dir + "/model")
@@ -340,7 +352,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mfcc.txt"
+    conf_file = "conf/LSTM_gs.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Train and validate

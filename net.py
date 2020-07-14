@@ -185,15 +185,15 @@ def initialize_weights(m):
 
 def initialize_network(conf_dict):
     # Instantiate the network
-    if conf_dict["model_type"] is "MLP":
+    if conf_dict["model_type"] == "MLP":
         model = MLP(conf_dict)
-    elif conf_dict["model_type"] is "CNN":
+    elif conf_dict["model_type"] == "CNN":
         model = CNN(conf_dict)
-    elif conf_dict["model_type"] is "RNN":
+    elif conf_dict["model_type"] == "RNN":
         model = RNNModel(conf_dict)
-    elif conf_dict["model_type"] is "LSTM":
+    elif conf_dict["model_type"] == "LSTM":
         model = LSTMModel(conf_dict)
-    elif conf_dict["model_type"] is "GRU":
+    elif conf_dict["model_type"] == "GRU":
         model = GRUModel(conf_dict)
 
     # Initialize weights

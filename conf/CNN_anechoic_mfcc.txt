@@ -6,7 +6,7 @@ window_size = 10
 kernel_size = (3,3)
 max_pooling = (2,2)
 num_hidden = 116
-num_output = 61
+num_classes = 61
 
 [Training]
 num_epochs = 200
