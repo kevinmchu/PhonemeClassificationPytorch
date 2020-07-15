@@ -60,10 +60,6 @@ def read_feat_file(filename, label_type):
         y = phone_to_phoneme(y, 39)
         y = np.array(y, dtype='object')
 
-        # Remove 'q'
-        X = X[y != 'q', :]
-        y = y[y != 'q']
-
     elif label_type == 'moa':
         y = phone_to_moa(y)
         y = np.array(y, dtype='object')
