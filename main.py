@@ -217,6 +217,10 @@ def read_conf(conf_file):
                 else:
                     conf_dict[contents[0]] = contents[1]
 
+    # Calculate number of features
+    conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
+                                (conf_dict["num_coeffs"] + int(conf_dict["use_energy"]))
+
     return conf_dict
 
 
