@@ -32,7 +32,7 @@ def fit_normalizer(file_list, label_type):
     return scaler
     
 
-def read_feat_file(filename, label_type):
+def read_feat_file(filename, conf_dict):
     """ 
     This function reads features and labels from a text file.
     
@@ -55,20 +55,22 @@ def read_feat_file(filename, label_type):
     X = np.array(list(map(lambda a: a[0:-1], featsAndLabs)), dtype='float32')
     y = list(map(lambda a: a[-1], featsAndLabs))
 
-    if label_type == 'phoneme':
+    # Deltas and delta-deltas calculated causally
+    if conf_dict["deltas"]:
+        deltas = np.concatenate((np.zeros((1, np.shape(X)[1]), dtype='float32'), np.diff(X, axis=0)), axis=0)
+        X = np.concatenate((X, deltas), axis=1)
+        if conf_dict["deltaDeltas"]:
+            delta_deltas = np.concatenate((np.zeros((1, np.shape(deltas)[1]), dtype='float32'), np.diff(deltas, axis=0)), axis=0)
+            X = np.concatenate((X, delta_deltas), axis=1)
+
+
+    if conf_dict["label_type"] == 'phoneme':
         # Map phones to phonemes
         y = phone_to_phoneme(y, 39)
         y = np.array(y, dtype='object')
 
-        # Remove 'q'
-        X = X[y != 'q', :]
-        y = y[y != 'q']
-
-    elif label_type == 'moa':
+    elif conf_dict["label_type"] == 'moa':
         y = phone_to_moa(y)
         y = np.array(y, dtype='object')
-
-    # Just MFCCs and deltas of current frame
-    X = X[:, 0:26]
     
     return X, y

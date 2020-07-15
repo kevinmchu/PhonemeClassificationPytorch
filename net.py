@@ -9,11 +9,11 @@ import torch.nn.functional as F
 
 class MLP(nn.Module):
 
-    def __init__(self, num_features, num_hidden, num_classes):
+    def __init__(self, conf_dict):
         super(MLP, self).__init__()
         
-        self.fc1 = nn.Linear(num_features, num_hidden)
-        self.fc2 = nn.Linear(num_hidden, num_classes)
+        self.fc1 = nn.Linear(conf_dict["num_features"], conf_dict["num_hidden"])
+        self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         
     def forward(self, x):
         x = torch.sigmoid(self.fc1(x))
@@ -24,19 +24,20 @@ class MLP(nn.Module):
 
 class CNN(nn.Module):
 
-    def __init__(self, num_features, feature_maps, window_size, kernel_size, max_pool, num_hidden, num_classes):
+    def __init__(self, conf_dict):
         super(CNN, self).__init__()
 
-        self.num_features = num_features
-        self.window_size = window_size
-        self.kernel_size = kernel_size
-        self.max_pool = max_pool
-        self.conv1 = nn.Conv2d(2, feature_maps, kernel_size=kernel_size)
+        self.num_channels = 1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])
+        self.num_features = conf_dict["num_features"]
+        self.window_size = conf_dict["window_size"]
+        self.kernel_size = conf_dict["kernel_size"]
+        self.max_pool = conf_dict["max_pooling"]
+        self.conv1 = nn.Conv2d(self.num_channels, conf_dict["num_feature_maps"], kernel_size=conf_dict["kernel_size"])
 
-        width = torch.floor(torch.tensor((window_size - kernel_size[0] + 1)/max_pool[0])).to(int)
-        height = torch.floor(torch.tensor((num_features/2 - kernel_size[1] + 1)/max_pool[1])).to(int)
-        self.fc1 = nn.Linear(width*height*feature_maps, num_hidden)
-        self.fc2 = nn.Linear(num_hidden, num_classes)
+        width = torch.floor(torch.tensor((self.window_size - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
+        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
+        self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
         # Add zero padding in time
@@ -47,7 +48,7 @@ class CNN(nn.Module):
 
         # Separate MFCCs and deltas
         x = torch.transpose(x, 0, 1)
-        x = x.view(1, 2, int(self.num_features/2), x.size()[1])
+        x = x.view(1, self.num_channels, int(self.num_features/self.num_channels), x.size()[1])
 
         # Format into feature maps
         batch_sz = x.size()[3] - self.window_size + 1
@@ -66,70 +67,19 @@ class CNN(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-# class RNNModel(nn.Module):
-#
-#     def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
-#         super(RNNModel, self).__init__()
-#
-#         # Properties
-#         self.num_hidden = num_hidden
-#         self.bidirectional = bidirectional
-#
-#         # Inputs to the hidden layer
-#         self.ih_f = nn.Linear(num_features, self.num_hidden)
-#         self.hh_f = nn.Linear(self.num_hidden, self.num_hidden)
-#
-#         # Add backward hidden layer for bidirectional nets
-#         if self.bidirectional:
-#             self.ih_b = nn.Linear(num_features, self.num_hidden)
-#             self.hh_b = nn.Linear(self.num_hidden, self.num_hidden)
-#             self.fc = nn.Linear(2*self.num_hidden, num_classes)
-#         else:
-#             self.fc = nn.Linear(self.num_hidden, num_classes)
-#
-#     def forward(self, x):
-#         if not self.bidirectional:
-#             h = self.unidirectional_pass(x)
-#         else:
-#             h_forward = self.unidirectional_pass(x)
-#             h_backward = self.unidirectional_pass(x, "backward")
-#             h = torch.cat((h_forward, h_backward), 1)
-#
-#         # Pass to output layer
-#         out = self.fc(h)
-#         out = F.log_softmax(out, dim=1)
-#
-#         return out
-#
-#     def unidirectional_pass(self, x, direction="forward"):
-#         # Hidden unit activations
-#         # First row contains initial hidden activations
-#         h = torch.zeros(x.size()[0]+1, self.num_hidden)
-#         #h = h.to(get_device())
-#
-#         # Recursively calculate hidden unit activations
-#         for i in range(1, x.size()[0]+1):
-#             if direction is "forward":
-#                 h[i, :] = torch.sigmoid(self.ih_f(x[i-1, :]) + self.hh_f(h[i-1, :].clone()))
-#             else:
-#                 h[i, :] = torch.sigmoid(self.ih_b(x[-i, :]) + self.hh_b(h[i-1, :].clone()))
-#
-#         # Ignore h0 activations
-#         return h[1:, :]
-
-
 class RNNModel(nn.Module):
 
-    def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
+    def __init__(self, conf_dict):
         super(RNNModel, self).__init__()
 
-        self.rnn = nn.RNN(input_size=num_features, hidden_size=num_hidden, num_layers=1, bidirectional=bidirectional)
+        self.rnn = nn.RNN(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
+                          bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
-        if not bidirectional:
-            self.fc = nn.Linear(num_hidden, num_classes)
+        if not conf_dict["bidirectional"]:
+            self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         else:
-            self.fc = nn.Linear(2*num_hidden, num_classes)
+            self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
         # Reshape features to (num_seq, num_batch, num_feats)
@@ -152,16 +102,17 @@ class RNNModel(nn.Module):
 
 class LSTMModel(nn.Module):
 
-    def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
+    def __init__(self, conf_dict):
         super(LSTMModel, self).__init__()
 
-        self.lstm = nn.LSTM(input_size=num_features, hidden_size=num_hidden, num_layers=1, bidirectional=bidirectional)
+        self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
+                            bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
-        if not bidirectional:
-            self.fc = nn.Linear(num_hidden, num_classes)
+        if not conf_dict["bidirectional"]:
+            self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         else:
-            self.fc = nn.Linear(2*num_hidden, num_classes)
+            self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
         # Reshape features to (num_seq, num_batch, num_feats)
@@ -181,16 +132,17 @@ class LSTMModel(nn.Module):
 
 class GRUModel(nn.Module):
 
-    def __init__(self, num_features, num_hidden, num_classes, bidirectional=False):
+    def __init__(self, conf_dict):
         super(GRUModel, self).__init__()
 
-        self.gru = nn.GRU(input_size=num_features, hidden_size=num_hidden, num_layers=1, bidirectional=bidirectional)
+        self.gru = nn.GRU(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
+                          bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
-        if not bidirectional:
-            self.fc = nn.Linear(num_hidden, num_classes)
+        if not conf_dict["bidirectional"]:
+            self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         else:
-            self.fc = nn.Linear(2*num_hidden, num_classes)
+            self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
         # Reshape features to (num_seq, num_batch, num_feats)
@@ -225,8 +177,32 @@ def initialize_weights(m):
         nn.init.uniform_(m.weight.data, a=a, b=b)
         nn.init.uniform_(m.bias.data, a=a, b=b)
 
+    if isinstance(m, nn.Conv2d):
+        nn.init.uniform_(m.weight.data, a=a, b=b)
+        nn.init.uniform_(m.bias.data, a=a, b=b)
+
     if isinstance(m, nn.RNN) or isinstance(m, nn.LSTM):
         nn.init.uniform_(m.weight_ih_l0, a=a, b=b)
         nn.init.uniform_(m.weight_hh_l0, a=a, b=b)
         nn.init.uniform_(m.bias_ih_l0, a=a, b=b)
         nn.init.uniform_(m.bias_hh_l0, a=a, b=b)
+
+
+def initialize_network(conf_dict):
+    # Instantiate the network
+    if conf_dict["model_type"] == "MLP":
+        model = MLP(conf_dict)
+    elif conf_dict["model_type"] == "CNN":
+        model = CNN(conf_dict)
+    elif conf_dict["model_type"] == "RNN":
+        model = RNNModel(conf_dict)
+    elif conf_dict["model_type"] == "LSTM":
+        model = LSTMModel(conf_dict)
+    elif conf_dict["model_type"] == "GRU":
+        model = GRUModel(conf_dict)
+
+    # Initialize weights
+    model.apply(initialize_weights)
+
+    return model
+

@@ -1,0 +1,16 @@
+[Architecture]
+model_type = LSTM
+bidirectional = True
+num_features = 26
+num_hidden = 93
+num_classes = 61
+
+[Training]
+num_epochs = 20
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phone
+
+[Datasets]
+training = data/train_gs.txt
+development = data/valid_gs.txt

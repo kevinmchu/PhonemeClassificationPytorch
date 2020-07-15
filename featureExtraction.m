@@ -68,6 +68,7 @@ extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energ
 extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'dev',conditions);
 
 %% TESTING DATA
+% conditions = {'anechoic'};
 conditions = {'office/air_binaural_office_0_1_3.mat'};
 proportions = {1};
 
