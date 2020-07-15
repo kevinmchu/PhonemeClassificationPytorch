@@ -27,14 +27,15 @@ class CNN(nn.Module):
     def __init__(self, conf_dict):
         super(CNN, self).__init__()
 
+        self.num_channels = 1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])
         self.num_features = conf_dict["num_features"]
         self.window_size = conf_dict["window_size"]
         self.kernel_size = conf_dict["kernel_size"]
         self.max_pool = conf_dict["max_pooling"]
-        self.conv1 = nn.Conv2d(2, conf_dict["num_feature_maps"], kernel_size=conf_dict["kernel_size"])
+        self.conv1 = nn.Conv2d(self.num_channels, conf_dict["num_feature_maps"], kernel_size=conf_dict["kernel_size"])
 
         width = torch.floor(torch.tensor((self.window_size - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
-        height = torch.floor(torch.tensor((self.num_features/2 - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
         self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
@@ -47,7 +48,7 @@ class CNN(nn.Module):
 
         # Separate MFCCs and deltas
         x = torch.transpose(x, 0, 1)
-        x = x.view(1, 2, int(self.num_features/2), x.size()[1])
+        x = x.view(1, self.num_channels, int(self.num_features/self.num_channels), x.size()[1])
 
         # Format into feature maps
         batch_sz = x.size()[3] - self.window_size + 1

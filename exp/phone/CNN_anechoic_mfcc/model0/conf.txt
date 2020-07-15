@@ -1,6 +1,5 @@
 [Architecture]
 model_type = CNN
-num_features = 26
 num_feature_maps = 40
 window_size = 10
 kernel_size = (3,3)
@@ -15,5 +14,12 @@ momentum = 0.9
 label_type = phone
 
 [Datasets]
-training = data/train_gs.txt
-development = data/valid_gs.txt
+training = data/train_anechoic/mfcc.txt
+development = data/dev_anechoic/mfcc.txt
+
+[Features]
+feature_type = mfcc
+num_coeffs = 12
+use_energy = True
+deltas = True
+deltaDeltas = True

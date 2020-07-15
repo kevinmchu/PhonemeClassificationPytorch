@@ -200,7 +200,7 @@ def read_conf(conf_file):
             contents = line.split(" = ")
             try:
                 # Ints
-                if "num" in contents[0]:
+                if "num" in contents[0] or "size" in contents[0]:
                     conf_dict[contents[0]] = int(contents[1])
                 # Floats
                 else:
@@ -297,7 +297,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mfcc.txt"
+    conf_file = "conf/CNN_anechoic_mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Train and validate
