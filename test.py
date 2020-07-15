@@ -19,7 +19,7 @@ from phone_mapping import get_phoneme_list
 from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
-def test(model, le, label_type, file_list):
+def test(model, le, conf_dict, file_list, scale_file):
     """ Test phoneme classification model
 
     Args:
@@ -41,7 +41,6 @@ def test(model, le, label_type, file_list):
     device = get_device()
 
     # Get scaler
-    scale_file = "features/scaler.pickle"
     with open(scale_file, 'rb') as f:
         scaler = pickle.load(f)
 
@@ -52,7 +51,7 @@ def test(model, le, label_type, file_list):
     with torch.no_grad():
         for i in tqdm(range(len(file_list))):
             # Extract features and labels for current file
-            x_batch, y_batch = read_feat_file(file_list[i], label_type)
+            x_batch, y_batch = read_feat_file(file_list[i], conf_dict)
 
             # Normalize features
             x_batch = scaler.transform(x_batch)
@@ -80,9 +79,9 @@ def test(model, le, label_type, file_list):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mfcc.txt"
+    conf_file = "conf/LSTM_anechoic_mspec.txt"
     model_idx = 0
-    test_feat_list = "data/test_anechoic/mfcc.txt"
+    test_feat_list = "data/test_anechoic/mspec.txt"
 
     # Read configuration file
     conf_dict = read_conf(conf_file)
@@ -91,9 +90,11 @@ if __name__ == '__main__':
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
                              "model" + str(model_idx))
     model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
-    test_list = read_feat_list(test_feat_list)
 
-    summary = test(model, get_label_encoder(conf_dict["label_type"]), conf_dict["label_type"], test_list)
+    test_list = read_feat_list(test_feat_list)
+    scale_file = model_dir + "/scaler.pickle"
+
+    summary = test(model, get_label_encoder(conf_dict["label_type"]), conf_dict, test_list, scale_file)
     y_prob = summary['y_prob'][0]
     y_true = summary['y_true'][0]
     #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
