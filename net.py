@@ -176,6 +176,10 @@ def initialize_weights(m):
         nn.init.uniform_(m.weight.data, a=a, b=b)
         nn.init.uniform_(m.bias.data, a=a, b=b)
 
+    if isinstance(m, nn.Conv2d):
+        nn.init.uniform_(m.weight.data, a=a, b=b)
+        nn.init.uniform_(m.bias.data, a=a, b=b)
+
     if isinstance(m, nn.RNN) or isinstance(m, nn.LSTM):
         nn.init.uniform_(m.weight_ih_l0, a=a, b=b)
         nn.init.uniform_(m.weight_hh_l0, a=a, b=b)

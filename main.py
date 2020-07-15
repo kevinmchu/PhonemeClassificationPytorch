@@ -293,7 +293,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mfcc.txt"
+    conf_file = "conf/CNN_anechoic_mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Train and validate
