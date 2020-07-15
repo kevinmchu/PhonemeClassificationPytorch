@@ -1,7 +1,6 @@
 [Architecture]
 model_type = LSTM
 bidirectional = False
-num_features = 39
 num_hidden = 140
 num_classes = 61
 
@@ -14,3 +13,10 @@ label_type = phone
 [Datasets]
 training = data/train_anechoic/mfcc.txt
 development = data/dev_anechoic/mfcc.txt
+
+[Features]
+feature_type = mfcc
+num_coeffs = 12
+use_energy = True
+deltas = True
+deltaDeltas = True

@@ -57,10 +57,10 @@ def read_feat_file(filename, conf_dict):
 
     # Deltas and delta-deltas calculated causally
     if conf_dict["deltas"]:
-        deltas = np.concatenate((np.zeros((1, np.shape(X)[1])), np.diff(X, axis=0)), axis=0)
+        deltas = np.concatenate((np.zeros((1, np.shape(X)[1]), dtype='float32'), np.diff(X, axis=0)), axis=0)
         X = np.concatenate((X, deltas), axis=1)
         if conf_dict["deltaDeltas"]:
-            delta_deltas = np.concatenate((np.zeros((1, np.shape(X)[1])), np.diff(deltas, axis=0)), axis=0)
+            delta_deltas = np.concatenate((np.zeros((1, np.shape(deltas)[1]), dtype='float32'), np.diff(deltas, axis=0)), axis=0)
             X = np.concatenate((X, delta_deltas), axis=1)
 
 

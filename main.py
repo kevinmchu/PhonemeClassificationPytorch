@@ -268,7 +268,7 @@ def train_and_validate(conf_file):
 
         # Get standard scaler
         scale_file = model_dir + "/scaler.pickle"
-        scaler = fit_normalizer(train_list, conf_dict["label_type"])
+        scaler = fit_normalizer(train_list, conf_dict)
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
 
@@ -297,7 +297,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mfcc.txt"
+    conf_file = "conf/LSTM_anechoic_mfcc.txt"
     test_feat_list = "data/test_anechoic/mfcc.txt"
 
     # Train and validate
