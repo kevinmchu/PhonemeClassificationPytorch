@@ -96,16 +96,23 @@ def tune_hyperparameters(conf_file):
         #     file_obj.write("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss\n")
 
         # Training
-        conf_dict["learning_rate"] = 1e-3
         logging.info("Training")
-        for epoch in tqdm(range(conf_dict["num_epochs"])):
+        max_epochs = 150
+        num_epochs_avg = 15
+        acc = []
+        for epoch in tqdm(range(max_epochs)):
             # with open(training_curves, "a") as file_obj:
             # logging.info("Epoch: {}".format(epoch + 1))
 
             train(model, optimizer, le, conf_dict, train_list, scale_file)
-            # train_metrics = validate(model, le, conf_dict, train_list, scale_file)
             valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
-            print("Epoch: {}, Validation Accuracy: {}\n".format(epoch + 1, round(valid_metrics['acc'], 3)))
+            acc.append(valid_metrics['acc'])
+
+            # Early stopping
+            if epoch >= num_epochs_avg - 1:
+                improvement = acc[epoch] - acc[epoch - (num_epochs_avg - 1)]
+                if improvement <= 0:
+                    break
 
             # file_obj.write("{},{},{},{},{}\n".
             #                format(epoch + 1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
