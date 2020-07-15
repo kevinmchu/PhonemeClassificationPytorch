@@ -297,7 +297,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mspec.txt"
+    conf_file = "conf/LSTM_rev_mfcc.txt"
 
     # Train and validate
     train_and_validate(conf_file)
