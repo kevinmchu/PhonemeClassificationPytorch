@@ -14,3 +14,8 @@ label_type = phone
 [Datasets]
 training = data/train_anechoic/mfcc.txt
 development = data/dev_anechoic/mfcc.txt
+
+[Features]
+feature_type = mfcc
+deltas = True
+deltaDeltas = True

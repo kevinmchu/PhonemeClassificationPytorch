@@ -162,14 +162,13 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
     switch feat_type
         case 'mfcc'
             if use_energy
-                [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'DeltaWindowLength',2);
+                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs);
             else
-                [coeffs,delta,deltaDelta] = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore','DeltaWindowLength',2);
+                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore');
             end
-            x = [coeffs,delta,deltaDelta];
         case 'mspec'
-            coeffs = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
-            x = log(coeffs');
+            x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
+            x = log(x');
         otherwise
             error('Invalid feature type.\n');
     end

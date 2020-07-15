@@ -60,7 +60,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, label_type, file_list, scale_file):
+def train(model, optimizer, le, conf_dict, file_list, scale_file):
     """ Train a phoneme classification model
     
     Args:
@@ -94,7 +94,7 @@ def train(model, optimizer, le, label_type, file_list, scale_file):
         optimizer.zero_grad()
 
         # Extract features and labels for current file
-        x_batch, y_batch = read_feat_file(file, label_type)
+        x_batch, y_batch = read_feat_file(file, conf_dict)
 
         # Normalize features
         x_batch = scaler.fit_transform(x_batch)
@@ -120,7 +120,7 @@ def train(model, optimizer, le, label_type, file_list, scale_file):
         optimizer.step()
 
 
-def validate(model, le, label_type, file_list, scale_file):
+def validate(model, le, conf_dict, file_list, scale_file):
     """ Validate phoneme classification model
     
     Args:
@@ -157,7 +157,7 @@ def validate(model, le, label_type, file_list, scale_file):
     with torch.no_grad():
         for file in file_list:
             # Extract features and labels for current file
-            x_batch, y_batch = read_feat_file(file, label_type)
+            x_batch, y_batch = read_feat_file(file, conf_dict)
 
             # Normalize features
             x_batch = scaler.fit_transform(x_batch)
@@ -279,9 +279,9 @@ def train_and_validate(conf_file):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(model, optimizer, le, conf_dict["label_type"], train_list, scale_file)
-                train_metrics = validate(model, le, conf_dict["label_type"], train_list, scale_file)
-                valid_metrics = validate(model, le, conf_dict["label_type"], valid_list, scale_file)
+                train(model, optimizer, le, conf_dict, train_list, scale_file)
+                train_metrics = validate(model, le, conf_dict, train_list, scale_file)
+                valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
 
                 file_obj.write("{},{},{},{},{}\n".
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
