@@ -61,7 +61,7 @@ def tune_hyperparameters(conf_file):
     # Random search over hyperparameters
     hyperparams = {}
     num_combos = 1
-    hyperparams["learning_rate"] = 10**(np.random.uniform(-5, -3, num_combos))
+    hyperparams["learning_rate"] = 10**(np.random.uniform(-4, -3, num_combos))
     hyperparams["momentum"] = np.random.uniform(0.8, 0.95, num_combos)
     hyperparams["num_hidden"] = np.random.randint(100, 201, num_combos)
     hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
@@ -128,7 +128,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_rev_mfcc.txt"
+    conf_file = "conf/LSTM_rev_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
