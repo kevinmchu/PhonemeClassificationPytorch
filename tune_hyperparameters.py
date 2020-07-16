@@ -62,7 +62,7 @@ def tune_hyperparameters(conf_file):
     hyperparams = {}
     num_combos = 1
     hyperparams["learning_rate"] = 10**(np.random.uniform(-5, -3, num_combos))
-    hyperparams["momentum"] = 1 - 10**(np.random.uniform(-2, 0, num_combos))
+    hyperparams["momentum"] = np.random.uniform(0.8, 0.95, num_combos)
     hyperparams["num_hidden"] = np.random.randint(100, 201, num_combos)
     hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
@@ -112,7 +112,7 @@ def tune_hyperparameters(conf_file):
             if epoch >= num_epochs_avg - 1:
                 ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch+1])/num_epochs_avg)
                 if epoch >= num_epochs_avg:
-                    if ma[-1] - ma[-2] <= 0.001:
+                    if ma[-1] - ma[-2] <= 0:
                         hyperparams["acc"][i] = acc[epoch]
                         break
 
