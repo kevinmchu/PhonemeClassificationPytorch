@@ -276,7 +276,7 @@ def train_and_validate(conf_file):
         acc = []
         ma = []
 
-        for epoch in tqdm(max_epochs):
+        for epoch in tqdm(range(max_epochs)):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
@@ -288,20 +288,24 @@ def train_and_validate(conf_file):
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
                                         round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
+                acc.append(valid_metrics["acc"])
+
                 # Stop early if moving average does not increase
                 if epoch >= num_epochs_avg - 1:
                     ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch + 1]) / num_epochs_avg)
                     if epoch >= num_epochs_avg:
                         if ma[-1] - ma[-2] < 0:
+                            logging.info("Maximum validation accuracy reached. Stopping training.")
                             break
 
         # Save model
+        logging.info("Saving model")
         torch.save(model, model_dir + "/model")
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_rev_mfcc.txt"
+    conf_file = "conf/LSTM_anechoic_mfcc.txt"
 
     # Train and validate
     train_and_validate(conf_file)
