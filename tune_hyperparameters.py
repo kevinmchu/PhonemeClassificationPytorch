@@ -64,7 +64,7 @@ def tune_hyperparameters(conf_file):
     hyperparams["learning_rate"] = 10**(np.random.uniform(-4, -3, num_combos))
     hyperparams["momentum"] = np.random.uniform(0.8, 0.95, num_combos)
     hyperparams["num_hidden"] = np.random.randint(100, 201, num_combos)
-    hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
+    #hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
 
     ma = []
