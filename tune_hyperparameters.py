@@ -125,7 +125,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_rev_mspec.txt"
+    conf_file = "conf/CNN_rev_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
