@@ -109,7 +109,7 @@ def tune_hyperparameters(conf_file):
             if epoch >= num_epochs_avg - 1:
                 ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch+1])/num_epochs_avg)
                 if epoch >= num_epochs_avg:
-                    if ma[-1] - ma[-2] <= 0:
+                    if ma[-1] - ma[-2] < 0:
                         hyperparams["acc"][i] = acc[epoch]
                         break
 
