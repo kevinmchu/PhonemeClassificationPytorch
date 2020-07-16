@@ -105,8 +105,14 @@ class LSTMModel(nn.Module):
     def __init__(self, conf_dict):
         super(LSTMModel, self).__init__()
 
-        self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
-                            bidirectional=conf_dict["bidirectional"])
+        # Stacked LSTMs
+        if "num_layers" in conf_dict.keys():
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
+                                num_layers=conf_dict["num_layers"], bidirectional=conf_dict["bidirectional"])
+        # Default is one LSTM layer
+        else:
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
+                                bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
         if not conf_dict["bidirectional"]:

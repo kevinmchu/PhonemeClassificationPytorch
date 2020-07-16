@@ -60,11 +60,14 @@ def tune_hyperparameters(conf_file):
 
     # Random search over hyperparameters
     hyperparams = {}
-    num_combos = 10
+    num_combos = 1
     hyperparams["learning_rate"] = 10**(np.random.uniform(-5, -3, num_combos))
-    hyperparams["momentum"] = 10**(np.random.uniform(-2, 0, num_combos))
-    hyperparams["num_hidden"] = np.random.uniform(100, 200, num_combos)
+    hyperparams["momentum"] = 1 - 10**(np.random.uniform(-2, 0, num_combos))
+    hyperparams["num_hidden"] = np.random.randint(100, 201, num_combos)
+    hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
+
+    ma = []
 
     for i in range(num_combos):
         # Set current values of hyperparameters
@@ -96,19 +99,31 @@ def tune_hyperparameters(conf_file):
         # Training
         logging.info("Training")
         max_epochs = 150
-        num_epochs_avg = 15
+        num_epochs_avg = 3
         acc = []
+        print(hyperparams)
         for epoch in tqdm(range(max_epochs)):
             train(model, optimizer, le, conf_dict, train_list, scale_file)
             valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
+            print("Validation Accuracy: {}".format(round(valid_metrics['acc'], 3)))
             acc.append(valid_metrics['acc'])
 
-            # Early stopping
+            # Stop early if moving average does not increase
             if epoch >= num_epochs_avg - 1:
-                improvement = acc[epoch] - acc[epoch - (num_epochs_avg - 1)]
-                if improvement <= 0:
-                    hyperparams["acc"][i] = acc[epoch]
-                    break
+                ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch+1])/num_epochs_avg)
+                if epoch >= num_epochs_avg:
+                    if ma[-1] - ma[-2] <= 0.001:
+                        hyperparams["acc"][i] = acc[epoch]
+                        break
+
+    # Best set of hyperparameters
+    best_idx = np.argmax(hyperparams["acc"])
+    best_hyperparams = {}
+    best_hyperparams["learning_rate"] = hyperparams["learning_rate"][best_idx]
+    best_hyperparams["momentum"] = hyperparams["momentum"][best_idx]
+    best_hyperparams["num_hidden"] = hyperparams["num_hidden"][best_idx]
+
+    print(best_hyperparams)
 
 
 if __name__ == '__main__':
