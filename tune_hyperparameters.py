@@ -91,10 +91,7 @@ def tune_hyperparameters(conf_file):
 
         # Get standard scaler
         model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model0")
-        scale_file = model_dir + "/scaler.pickle"
-        # scaler = fit_normalizer(train_list, conf_dict)
-        # with open(scale_file, 'wb') as f:
-        #     pickle.dump(scaler, f)
+        scaler = fit_normalizer(train_list, conf_dict)
 
         # Training
         logging.info("Training")
@@ -103,8 +100,8 @@ def tune_hyperparameters(conf_file):
         acc = []
         print(hyperparams)
         for epoch in tqdm(range(max_epochs)):
-            train(model, optimizer, le, conf_dict, train_list, scale_file)
-            valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
+            train(model, optimizer, le, conf_dict, train_list, scaler)
+            valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
             print("Validation Accuracy: {}".format(round(valid_metrics['acc'], 3)))
             acc.append(valid_metrics['acc'])
 

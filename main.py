@@ -60,7 +60,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scale_file):
+def train(model, optimizer, le, conf_dict, file_list, scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -79,10 +79,6 @@ def train(model, optimizer, le, conf_dict, file_list, scale_file):
 
     # Get device
     device = get_device()
-
-    # Get scaler
-    with open(scale_file, 'rb') as f:
-        scaler = pickle.load(f)
 
     # Set model to training mode
     model.train()
@@ -120,7 +116,7 @@ def train(model, optimizer, le, conf_dict, file_list, scale_file):
         optimizer.step()
 
 
-def validate(model, le, conf_dict, file_list, scale_file):
+def validate(model, le, conf_dict, file_list, scaler):
     """ Validate phoneme classification model
     
     Args:
@@ -146,10 +142,6 @@ def validate(model, le, conf_dict, file_list, scale_file):
 
     # Get device
     device = get_device()
-
-    # Get scaler
-    with open(scale_file, 'rb') as f:
-        scaler = pickle.load(f)
 
     # Evaluation mode
     model.eval()
@@ -283,9 +275,9 @@ def train_and_validate(conf_file):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scale_file)
-                train_metrics = validate(model, le, conf_dict, train_list, scale_file)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
+                train(model, optimizer, le, conf_dict, train_list, scaler)
+                train_metrics = validate(model, le, conf_dict, train_list, scaler)
+                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
 
                 file_obj.write("{},{},{},{},{}\n".
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
