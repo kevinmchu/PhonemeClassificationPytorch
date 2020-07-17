@@ -271,10 +271,9 @@ def train_and_validate(conf_file):
 
         # Training
         logging.info("Training")
-        max_epochs = 150
         max_acc = 0
 
-        for epoch in tqdm(range(max_epochs)):
+        for epoch in tqdm(range(conf_dict["num_epochs"])):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 

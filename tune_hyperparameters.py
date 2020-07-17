@@ -60,14 +60,16 @@ def tune_hyperparameters(conf_file):
 
     # Random search over hyperparameters
     hyperparams = {}
-    num_combos = 1
-    hyperparams["learning_rate"] = 10**(np.random.uniform(-4, -3, num_combos))
-    hyperparams["momentum"] = np.random.uniform(0.8, 0.95, num_combos)
-    hyperparams["num_hidden"] = np.random.randint(100, 201, num_combos)
-    #hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
+    num_combos = 2
+    hyperparams["learning_rate"] = 10.0**(np.random.randint(-5, -2, num_combos))
+    hyperparams["momentum"] = 0.1*np.random.randint(7, 10, num_combos)
+    hyperparams["window_size"] = np.random.randint(10, 16, num_combos)
+    hyperparams["num_hidden"] = np.random.choice(np.array([200, 250, 300]), num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
 
     for i in range(num_combos):
+        print(hyperparams)
+
         # Set current values of hyperparameters
         conf_dict["learning_rate"] = hyperparams["learning_rate"][i]
         conf_dict["momentum"] = hyperparams["momentum"][i]
@@ -88,26 +90,27 @@ def tune_hyperparameters(conf_file):
         valid_list = read_feat_list(conf_dict["development"])
 
         # Get standard scaler
-        model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model0")
         scaler = fit_normalizer(train_list, conf_dict)
 
         # Training
         logging.info("Training")
-        max_epochs = 150
         max_acc = 0
+        acc = []
 
-        for epoch in tqdm(range(max_epochs)):
+        for epoch in tqdm(range(conf_dict["num_epochs"])):
             train(model, optimizer, le, conf_dict, train_list, scaler)
             valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+            acc.append(valid_metrics["acc"])
             print("Validation Accuracy: {}".format(round(valid_metrics['acc'], 3)))
 
             # Track the best model
             if valid_metrics['acc'] > max_acc:
                 max_acc = valid_metrics["acc"]
 
-            # Stop early if accuracy drops by > 1% from the maximum accuracy
-            if valid_metrics['acc'] - max_acc < -0.01:
-                break
+            # Stop early if accuracy does not improve over last 10 epochs
+            if epoch >= 10:
+                if acc[-1] - acc[-11] < 0.001:
+                    break
 
         # Save the accuracy of the best model for current set of hyperparameters
         hyperparams["acc"][i] = max_acc
