@@ -98,24 +98,24 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	accuracy = float(np.sum(y_true == y_pred))/len(y_true)
 	print("Accuracy: ", round(accuracy, 3))
 
-	# Calculate normalized confusion matrix
-	cm = confusion_matrix(y_true, y_pred)
-	cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
-
-	# Labels
-	labels_int = np.arange(0, len(np.unique(y_true)), 1)
-	labels_str = le.inverse_transform(labels_int)
-
-	# Sort
-	sorted_cm = sort_classes(cm, labels_str, sort_order)
-
-	plt.figure(figsize=(10, 10))
-	plt.imshow(sorted_cm)
-	plt.title("Percent Correct = {}%".format(round(accuracy*100, 1)))
-	plt.xlabel("Predicted Class")
-	plt.ylabel("True Class")
-	plt.xticks(labels_int, sort_order, rotation=90)
-	plt.yticks(labels_int, sort_order)
-	plt.colorbar()
-	plt.clim(0, 1)
-	# plt.savefig("fig.png", bbox_inches='tight')
+	# # Calculate normalized confusion matrix
+	# cm = confusion_matrix(y_true, y_pred)
+	# cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
+	#
+	# # Labels
+	# #labels_int = np.arange(0, len(y_true), 1)
+	# labels_str = le.inverse_transform(np.unique(y_true))
+	#
+	# # Sort
+	# sorted_cm = sort_classes(cm, labels_str, sort_order)
+	#
+	# plt.figure(figsize=(10, 10))
+	# plt.imshow(sorted_cm)
+	# plt.title("Percent Correct = {}%".format(round(accuracy*100, 1)))
+	# plt.xlabel("Predicted Class")
+	# plt.ylabel("True Class")
+	# plt.xticks(labels_int, sort_order, rotation=90)
+	# plt.yticks(labels_int, sort_order)
+	# plt.colorbar()
+	# plt.clim(0, 1)
+	# # plt.savefig("fig.png", bbox_inches='tight')
