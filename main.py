@@ -272,9 +272,7 @@ def train_and_validate(conf_file):
         # Training
         logging.info("Training")
         max_epochs = 150
-        num_epochs_avg = 3
-        acc = []
-        ma = []
+        max_acc = 0
 
         for epoch in tqdm(range(max_epochs)):
             with open(training_curves, "a") as file_obj:
@@ -288,24 +286,20 @@ def train_and_validate(conf_file):
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
                                         round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
-                acc.append(valid_metrics["acc"])
+                # Track the best model
+                if valid_metrics['acc'] > max_acc:
+                    max_acc = valid_metrics["acc"]
+                    torch.save(model, model_dir + "/model")
 
-                # Stop early if moving average does not increase
-                if epoch >= num_epochs_avg - 1:
-                    ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch + 1]) / num_epochs_avg)
-                    if epoch >= num_epochs_avg:
-                        if ma[-1] - ma[-2] < 0:
-                            logging.info("Maximum validation accuracy reached. Stopping training.")
-                            break
-
-        # Save model
-        logging.info("Saving model")
-        torch.save(model, model_dir + "/model")
+                # Stop early if accuracy drops by > 1% from the maximum accuracy
+                if valid_metrics['acc'] - max_acc < -0.01:
+                    logging.info("Detected drop in validation accuracy. Stopping training.")
+                    break
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_rev_mfcc.txt"
+    conf_file = "conf/MLP_anechoic_mfcc.txt"
 
     # Train and validate
     train_and_validate(conf_file)

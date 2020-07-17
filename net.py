@@ -14,10 +14,11 @@ class MLP(nn.Module):
 
         self.num_features = conf_dict["num_features"]
         self.window_size = conf_dict["window_size"]
-        self.fc1 = nn.Linear(conf_dict["num_features"], conf_dict["num_hidden"])
+        self.fc1 = nn.Linear(conf_dict["window_size"]*conf_dict["num_features"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         
     def forward(self, x):
+        x = self.splice(x)
         x = torch.sigmoid(self.fc1(x))
         x = self.fc2(x)
         
@@ -36,7 +37,7 @@ class MLP(nn.Module):
         idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
         idx = idx.to(int)
         x = x[idx, :]
-        x = x.view(self.window_size, self.window_size*self.num_features)
+        x = x.view(x.size()[0], self.window_size*self.num_features)
 
         return x
 

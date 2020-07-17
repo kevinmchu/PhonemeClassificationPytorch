@@ -67,8 +67,6 @@ def tune_hyperparameters(conf_file):
     #hyperparams["num_layers"] = np.random.randint(1, 3, num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
 
-    ma = []
-
     for i in range(num_combos):
         # Set current values of hyperparameters
         conf_dict["learning_rate"] = hyperparams["learning_rate"][i]
@@ -96,24 +94,25 @@ def tune_hyperparameters(conf_file):
         # Training
         logging.info("Training")
         max_epochs = 150
-        num_epochs_avg = 3
-        acc = []
-        print(hyperparams)
+        max_acc = 0
+
         for epoch in tqdm(range(max_epochs)):
             train(model, optimizer, le, conf_dict, train_list, scaler)
             valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
             print("Validation Accuracy: {}".format(round(valid_metrics['acc'], 3)))
-            acc.append(valid_metrics['acc'])
 
-            # Stop early if moving average does not increase
-            if epoch >= num_epochs_avg - 1:
-                ma.append(sum(acc[epoch - (num_epochs_avg - 1):epoch+1])/num_epochs_avg)
-                if epoch >= num_epochs_avg:
-                    if ma[-1] - ma[-2] < 0:
-                        hyperparams["acc"][i] = acc[epoch]
-                        break
+            # Track the best model
+            if valid_metrics['acc'] > max_acc:
+                max_acc = valid_metrics["acc"]
 
-    # Best set of hyperparameters
+            # Stop early if accuracy drops by > 1% from the maximum accuracy
+            if valid_metrics['acc'] - max_acc < -0.01:
+                break
+
+        # Save the accuracy of the best model for current set of hyperparameters
+        hyperparams["acc"][i] = max_acc
+
+    # Set of hyperparameters that gives the highest accuracy on the validation set
     best_idx = np.argmax(hyperparams["acc"])
     best_hyperparams = {}
     best_hyperparams["learning_rate"] = hyperparams["learning_rate"][best_idx]
@@ -125,7 +124,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_rev_mspec.txt"
+    conf_file = "conf/MLP_anechoic_mfcc.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)

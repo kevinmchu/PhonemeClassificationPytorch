@@ -10,8 +10,8 @@ momentum = 0.9
 label_type = phone
 
 [Datasets]
-training = data/train_rev/mfcc.txt
-development = data/dev_rev/mfcc.txt
+training = data/train_anechoic/mfcc.txt
+development = data/dev_anechoic/mfcc.txt
 
 [Features]
 feature_type = mfcc
