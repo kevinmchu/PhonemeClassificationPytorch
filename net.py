@@ -11,7 +11,9 @@ class MLP(nn.Module):
 
     def __init__(self, conf_dict):
         super(MLP, self).__init__()
-        
+
+        self.num_features = conf_dict["num_features"]
+        self.window_size = conf_dict["window_size"]
         self.fc1 = nn.Linear(conf_dict["num_features"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         
@@ -20,6 +22,23 @@ class MLP(nn.Module):
         x = self.fc2(x)
         
         return F.log_softmax(x, dim=1)
+
+    def splice(self, x):
+        # Add zero padding in time
+        x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
+        if torch.cuda.is_available():
+            x0 = x0.cuda()
+        x = torch.cat((x0, x), dim=0)
+
+        # Splice
+        batch_sz = x.size()[0] - self.window_size + 1
+        idx = torch.linspace(0, self.window_size-1, self.window_size)
+        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
+        idx = idx.to(int)
+        x = x[idx, :]
+        x = x.view(self.window_size, self.window_size*self.num_features)
+
+        return x
 
 
 class CNN(nn.Module):
