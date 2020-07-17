@@ -40,6 +40,17 @@ class CNN(nn.Module):
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
+        x = self.input_to_featmap(x)
+
+        # Pass through network
+        x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
+        x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
+        x = torch.sigmoid(self.fc1(x))
+        x = self.fc2(x)
+
+        return F.log_softmax(x, dim=1)
+
+    def input_to_featmap(self, x):
         # Add zero padding in time
         x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
         if torch.cuda.is_available():
@@ -58,13 +69,7 @@ class CNN(nn.Module):
         x = x[0, :, :, idx]#.view(batch_sz, 2, int(self.num_features/2), self.window_size)
         x = x.permute(2, 0, 1, 3)
 
-        # Pass through network
-        x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
-        x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
-        x = torch.sigmoid(self.fc1(x))
-        x = self.fc2(x)
-
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 class RNNModel(nn.Module):
