@@ -60,11 +60,12 @@ def tune_hyperparameters(conf_file):
 
     # Random search over hyperparameters
     hyperparams = {}
-    num_combos = 2
-    hyperparams["learning_rate"] = 10.0**(np.random.randint(-5, -2, num_combos))
-    hyperparams["momentum"] = 0.1*np.random.randint(7, 10, num_combos)
-    hyperparams["window_size"] = np.random.randint(10, 16, num_combos)
-    hyperparams["num_hidden"] = np.random.choice(np.array([200, 250, 300]), num_combos)
+    num_combos = 1
+    hyperparams["learning_rate"] = 10.0**(np.random.randint(-5, -4, num_combos))
+    hyperparams["momentum"] = 0.1*np.random.randint(9, 10, num_combos)
+    #hyperparams["window_size"] = np.random.randint(10, 16, num_combos)
+    hyperparams["num_layers"] = 1
+    hyperparams["num_hidden"] = np.random.choice(np.array([116]), num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
 
     for i in range(num_combos):
@@ -73,6 +74,7 @@ def tune_hyperparameters(conf_file):
         # Set current values of hyperparameters
         conf_dict["learning_rate"] = hyperparams["learning_rate"][i]
         conf_dict["momentum"] = hyperparams["momentum"][i]
+        conf_dict["num_layers"] = hyperparams["num_layers"]
         conf_dict["num_hidden"] = hyperparams["num_hidden"][i]
 
         # Initialize network
@@ -84,6 +86,7 @@ def tune_hyperparameters(conf_file):
 
         # Stochastic gradient descent with user-defined learning rate and momentum
         optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+        #optimizer = optim.Adam(model.parameters(), lr=conf_dict["learning_rate"])
 
         # Read in feature files
         train_list = read_feat_list(conf_dict["training"])
@@ -127,7 +130,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/MLP_anechoic_mfcc.txt"
+    conf_file = "conf/CNN_anechoic_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
