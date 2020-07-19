@@ -54,8 +54,8 @@ class CNN(nn.Module):
         self.max_pool = conf_dict["max_pooling"]
         self.conv1 = nn.Conv2d(self.num_channels, conf_dict["num_feature_maps"], kernel_size=conf_dict["kernel_size"])
 
-        width = torch.floor(torch.tensor((self.window_size - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
-        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        width = torch.floor(torch.tensor((self.window_size - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
         self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
