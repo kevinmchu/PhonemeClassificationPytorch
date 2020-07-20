@@ -281,6 +281,7 @@ def train_and_validate(conf_file):
                 train(model, optimizer, le, conf_dict, train_list, scaler)
                 train_metrics = validate(model, le, conf_dict, train_list, scaler)
                 valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{},{},{}\n".
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
@@ -299,7 +300,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/MLP_anechoic_mspec.txt"
+    conf_file = "conf/CNN_anechoic_mspec.txt"
 
     # Train and validate
     train_and_validate(conf_file)

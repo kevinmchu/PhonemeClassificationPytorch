@@ -117,7 +117,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mspec.txt"
+    conf_file = "conf/MLP_anechoic_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
