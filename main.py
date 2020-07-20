@@ -272,6 +272,7 @@ def train_and_validate(conf_file):
         # Training
         logging.info("Training")
         max_acc = 0
+        acc = []
 
         for epoch in tqdm(range(conf_dict["num_epochs"])):
             with open(training_curves, "a") as file_obj:
@@ -290,15 +291,15 @@ def train_and_validate(conf_file):
                     max_acc = valid_metrics["acc"]
                     torch.save(model, model_dir + "/model")
 
-                # Stop early if accuracy drops by > 1% from the maximum accuracy
-                if valid_metrics['acc'] - max_acc < -0.01:
-                    logging.info("Detected drop in validation accuracy. Stopping training.")
-                    break
+                # Stop early if accuracy does not improve over last 10 epochs
+                if epoch >= 10:
+                    if acc[-1] - acc[-11] < 0.001:
+                        break
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/MLP_anechoic_mfcc.txt"
+    conf_file = "conf/MLP_anechoic_mspec.txt"
 
     # Train and validate
     train_and_validate(conf_file)

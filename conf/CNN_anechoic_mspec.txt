@@ -2,8 +2,8 @@
 model_type = CNN
 num_feature_maps = 40
 window_size = 10
-kernel_size = (2,2)
-max_pooling = (2,2)
+kernel_size = (3,5)
+max_pooling = (3,1)
 num_hidden = 116
 num_classes = 61
 
