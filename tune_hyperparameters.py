@@ -61,21 +61,12 @@ def tune_hyperparameters(conf_file):
     # Random search over hyperparameters
     hyperparams = {}
     num_combos = 1
-    hyperparams["learning_rate"] = 10.0**(np.random.randint(-5, -4, num_combos))
-    hyperparams["momentum"] = 0.1*np.random.randint(9, 10, num_combos)
-    #hyperparams["window_size"] = np.random.randint(10, 16, num_combos)
-    hyperparams["num_layers"] = 1
-    hyperparams["num_hidden"] = np.random.choice(np.array([116]), num_combos)
     hyperparams["acc"] = np.zeros((num_combos,))
 
     for i in range(num_combos):
         print(hyperparams)
 
         # Set current values of hyperparameters
-        conf_dict["learning_rate"] = hyperparams["learning_rate"][i]
-        conf_dict["momentum"] = hyperparams["momentum"][i]
-        conf_dict["num_layers"] = hyperparams["num_layers"]
-        conf_dict["num_hidden"] = hyperparams["num_hidden"][i]
 
         # Initialize network
         model = initialize_network(conf_dict)
@@ -86,7 +77,6 @@ def tune_hyperparameters(conf_file):
 
         # Stochastic gradient descent with user-defined learning rate and momentum
         optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
-        #optimizer = optim.Adam(model.parameters(), lr=conf_dict["learning_rate"])
 
         # Read in feature files
         train_list = read_feat_list(conf_dict["training"])
@@ -121,16 +111,13 @@ def tune_hyperparameters(conf_file):
     # Set of hyperparameters that gives the highest accuracy on the validation set
     best_idx = np.argmax(hyperparams["acc"])
     best_hyperparams = {}
-    best_hyperparams["learning_rate"] = hyperparams["learning_rate"][best_idx]
-    best_hyperparams["momentum"] = hyperparams["momentum"][best_idx]
-    best_hyperparams["num_hidden"] = hyperparams["num_hidden"][best_idx]
 
     print(best_hyperparams)
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mspec.txt"
+    conf_file = "conf/LSTM_anechoic_mfcc.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
