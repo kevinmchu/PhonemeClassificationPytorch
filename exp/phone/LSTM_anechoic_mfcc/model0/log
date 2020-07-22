@@ -11,3 +11,15 @@ INFO:root:Epoch: 8
 INFO:root:Epoch: 9
 INFO:root:Epoch: 10
 INFO:root:Epoch: 11
+INFO:root:Epoch: 12
+INFO:root:Epoch: 13
+INFO:root:Epoch: 14
+INFO:root:Epoch: 15
+INFO:root:Epoch: 16
+INFO:root:Epoch: 17
+INFO:root:Epoch: 18
+INFO:root:Epoch: 19
+INFO:root:Epoch: 20
+INFO:root:Epoch: 21
+INFO:root:Maximum validation accuracy reached. Stopping training.
+INFO:root:Saving model

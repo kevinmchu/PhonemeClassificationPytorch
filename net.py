@@ -11,15 +11,35 @@ class MLP(nn.Module):
 
     def __init__(self, conf_dict):
         super(MLP, self).__init__()
-        
-        self.fc1 = nn.Linear(conf_dict["num_features"], conf_dict["num_hidden"])
+
+        self.num_features = conf_dict["num_features"]
+        self.window_size = conf_dict["window_size"]
+        self.fc1 = nn.Linear(conf_dict["window_size"]*conf_dict["num_features"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         
     def forward(self, x):
+        x = self.splice(x)
         x = torch.sigmoid(self.fc1(x))
         x = self.fc2(x)
         
         return F.log_softmax(x, dim=1)
+
+    def splice(self, x):
+        # Add zero padding in time
+        x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
+        if torch.cuda.is_available():
+            x0 = x0.cuda()
+        x = torch.cat((x0, x), dim=0)
+
+        # Splice
+        batch_sz = x.size()[0] - self.window_size + 1
+        idx = torch.linspace(0, self.window_size-1, self.window_size)
+        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
+        idx = idx.to(int)
+        x = x[idx, :]
+        x = x.view(x.size()[0], self.window_size*self.num_features)
+
+        return x
 
 
 class CNN(nn.Module):
@@ -34,12 +54,23 @@ class CNN(nn.Module):
         self.max_pool = conf_dict["max_pooling"]
         self.conv1 = nn.Conv2d(self.num_channels, conf_dict["num_feature_maps"], kernel_size=conf_dict["kernel_size"])
 
-        width = torch.floor(torch.tensor((self.window_size - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
-        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        width = torch.floor(torch.tensor((self.window_size - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
+        height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
         self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
+        x = self.input_to_featmap(x)
+
+        # Pass through network
+        x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
+        x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
+        x = torch.sigmoid(self.fc1(x))
+        x = self.fc2(x)
+
+        return F.log_softmax(x, dim=1)
+
+    def input_to_featmap(self, x):
         # Add zero padding in time
         x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
         if torch.cuda.is_available():
@@ -58,13 +89,7 @@ class CNN(nn.Module):
         x = x[0, :, :, idx]#.view(batch_sz, 2, int(self.num_features/2), self.window_size)
         x = x.permute(2, 0, 1, 3)
 
-        # Pass through network
-        x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
-        x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
-        x = torch.sigmoid(self.fc1(x))
-        x = self.fc2(x)
-
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 class RNNModel(nn.Module):
@@ -105,8 +130,14 @@ class LSTMModel(nn.Module):
     def __init__(self, conf_dict):
         super(LSTMModel, self).__init__()
 
-        self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
-                            bidirectional=conf_dict["bidirectional"])
+        # Stacked LSTMs
+        if "num_layers" in conf_dict.keys():
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
+                                num_layers=conf_dict["num_layers"], bidirectional=conf_dict["bidirectional"])
+        # Default is one LSTM layer
+        else:
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
+                                bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
         if not conf_dict["bidirectional"]:

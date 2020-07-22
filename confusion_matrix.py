@@ -104,7 +104,7 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 
 	# Labels
 	labels_int = np.arange(0, len(np.unique(y_true)), 1)
-	labels_str = le.inverse_transform(labels_int)
+	labels_str = le.inverse_transform(np.unique(y_true))
 
 	# Sort
 	sorted_cm = sort_classes(cm, labels_str, sort_order)
@@ -118,4 +118,5 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	plt.yticks(labels_int, sort_order)
 	plt.colorbar()
 	plt.clim(0, 1)
-	# plt.savefig("fig.png", bbox_inches='tight')
+	plt.show()
+	plt.savefig("fig.png", bbox_inches='tight')

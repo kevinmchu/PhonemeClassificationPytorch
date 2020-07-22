@@ -25,8 +25,5 @@ INFO:root:Epoch: 22
 INFO:root:Epoch: 23
 INFO:root:Epoch: 24
 INFO:root:Epoch: 25
-INFO:root:Epoch: 26
-INFO:root:Epoch: 27
-INFO:root:Epoch: 28
 INFO:root:Maximum validation accuracy reached. Stopping training.
 INFO:root:Saving model

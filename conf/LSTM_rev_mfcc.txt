@@ -5,7 +5,7 @@ num_hidden = 140
 num_classes = 61
 
 [Training]
-num_epochs = 15
+num_epochs = 100
 learning_rate = 1e-5
 momentum = 0.9
 label_type = phone

@@ -58,32 +58,32 @@ end
 conditions = struct('condition',conditions,'proportion',num2cell(proportions));
 
 % Create data files
-generateWavInfo(timit_dir,'train',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
+%generateWavInfo(timit_dir,'train',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
 generateWavInfo(timit_dir,'dev',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
 %(fs, frame_len, frame_shift, dataset, conditions, timit_dir, feat_dir, feat_type)
-extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'train',conditions);
+%extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'train',conditions);
 extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'dev',conditions);
 
-%% TESTING DATA
-% conditions = {'anechoic'};
-conditions = {'office/air_binaural_office_0_1_3.mat'};
-proportions = {1};
-
-% Create variables based on user inputs
-for i = 1:numel(conditions)
-    if ~strcmp(conditions{i},'anechoic')
-        conditions{i} = strcat(rir_dir,filesep,conditions{i});
-    end
-end
-
-conditions = struct('condition',conditions,'proportion',proportions);
-
-% Create data files
-generateWavInfo(timit_dir,'test',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
-
-% Extract features
-fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'test',conditions);
+% %% TESTING DATA
+% % conditions = {'anechoic'};
+% conditions = {'office/air_binaural_office_0_1_3.mat'};
+% proportions = {1};
+% 
+% % Create variables based on user inputs
+% for i = 1:numel(conditions)
+%     if ~strcmp(conditions{i},'anechoic')
+%         conditions{i} = strcat(rir_dir,filesep,conditions{i});
+%     end
+% end
+% 
+% conditions = struct('condition',conditions,'proportion',proportions);
+% 
+% % Create data files
+% generateWavInfo(timit_dir,'test',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
+% 
+% % Extract features
+% fprintf('********** FEATURE EXTRACTION **********\n');
+% extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'test',conditions);

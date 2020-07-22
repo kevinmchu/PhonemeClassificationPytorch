@@ -60,7 +60,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scale_file):
+def train(model, optimizer, le, conf_dict, file_list, scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -79,10 +79,6 @@ def train(model, optimizer, le, conf_dict, file_list, scale_file):
 
     # Get device
     device = get_device()
-
-    # Get scaler
-    with open(scale_file, 'rb') as f:
-        scaler = pickle.load(f)
 
     # Set model to training mode
     model.train()
@@ -120,7 +116,7 @@ def train(model, optimizer, le, conf_dict, file_list, scale_file):
         optimizer.step()
 
 
-def validate(model, le, conf_dict, file_list, scale_file):
+def validate(model, le, conf_dict, file_list, scaler):
     """ Validate phoneme classification model
     
     Args:
@@ -146,10 +142,6 @@ def validate(model, le, conf_dict, file_list, scale_file):
 
     # Get device
     device = get_device()
-
-    # Get scaler
-    with open(scale_file, 'rb') as f:
-        scaler = pickle.load(f)
 
     # Evaluation mode
     model.eval()
@@ -279,25 +271,36 @@ def train_and_validate(conf_file):
 
         # Training
         logging.info("Training")
+        max_acc = 0
+        acc = []
+
         for epoch in tqdm(range(conf_dict["num_epochs"])):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scale_file)
-                train_metrics = validate(model, le, conf_dict, train_list, scale_file)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scale_file)
+                train(model, optimizer, le, conf_dict, train_list, scaler)
+                train_metrics = validate(model, le, conf_dict, train_list, scaler)
+                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{},{},{}\n".
                                 format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
                                         round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
-        # Save model
-        torch.save(model, model_dir + "/model")
+                # Track the best model
+                if valid_metrics['acc'] > max_acc:
+                    max_acc = valid_metrics["acc"]
+                    torch.save(model, model_dir + "/model")
+
+                # Stop early if accuracy does not improve over last 10 epochs
+                if epoch >= 10:
+                    if acc[-1] - acc[-11] < 0.001:
+                        break
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_rev_mfcc.txt"
+    conf_file = "conf/LSTM_anechoic_mspec.txt"
 
     # Train and validate
     train_and_validate(conf_file)
