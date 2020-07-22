@@ -216,14 +216,12 @@ def read_conf(conf_file):
     return conf_dict
 
 
-def train_and_validate(conf_file):
+def train_and_validate(conf_file, num_models):
     """ Train and evaluate a phoneme classification model
 
     Args:
-        model_type (str): model type
-        train_list (list): list of training files
-        valid_list (list): list of validation files
-        label_type (str): phone or phoneme
+        conf_file (str): txt file containing model info
+        num_models (int): number of instances to of model to train
 
     """
     # Read in conf file
@@ -303,8 +301,9 @@ def train_and_validate(conf_file):
 
 
 if __name__ == '__main__':
-    # Necessary files
+    # User inputs
     conf_file = "conf/LSTM_rev_mspec.txt"
+    num_models = 1
 
     # Train and validate
-    train_and_validate(conf_file)
+    train_and_validate(conf_file, num_models)
