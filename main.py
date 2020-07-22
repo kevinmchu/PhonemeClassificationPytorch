@@ -233,9 +233,13 @@ def train_and_validate(conf_file):
     le = get_label_encoder(conf_dict["label_type"])
 
     for i in range(1):
-        # Model directory
+        # Model directory - create new folder for each new instance of a model
         model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
-        Path(model_dir).mkdir(parents=True, exist_ok=True)
+        while os.path.exists(model_dir):
+            i += 1
+            model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
+                                     "model" + str(i))
+        Path(model_dir).mkdir(parents=True)
 
         # Copy config file
         copyfile(conf_file, (conf_file.replace("conf/", model_dir + "/")).replace(conf_file.split("/")[1], "conf.txt"))
@@ -300,7 +304,7 @@ def train_and_validate(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mspec.txt"
+    conf_file = "conf/LSTM_rev_mspec.txt"
 
     # Train and validate
     train_and_validate(conf_file)
