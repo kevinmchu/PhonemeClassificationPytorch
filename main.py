@@ -230,7 +230,7 @@ def train_and_validate(conf_file, num_models):
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
 
-    for i in range(1):
+    for i in range(num_models):
         # Model directory - create new folder for each new instance of a model
         model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
         while os.path.exists(model_dir):
