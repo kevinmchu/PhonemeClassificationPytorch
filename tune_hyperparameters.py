@@ -60,13 +60,19 @@ def tune_hyperparameters(conf_file):
 
     # Random search over hyperparameters
     hyperparams = {}
-    num_combos = 1
+    num_combos = 11
+    hyperparams["num_feature_maps"] = [20, 20, 20, 30, 20, 30, 40, 20, 30, 40, 50]
+    hyperparams["max_pooling"] = [(4, 1), (5, 1), (6, 1), (6, 1), (7, 1), (7, 1), (7, 1), (8, 1), (8, 1), (8, 1), (8, 1)]
+    hyperparams["num_hidden"] = [67, 85, 98, 67, 116, 80, 61, 143, 98, 75, 61]
     hyperparams["acc"] = np.zeros((num_combos,))
 
     for i in range(num_combos):
-        print(hyperparams)
+        print(i)
 
         # Set current values of hyperparameters
+        conf_dict["num_feature_maps"] = hyperparams["num_feature_maps"][i]
+        conf_dict["max_pooling"] = hyperparams["max_pooling"][i]
+        conf_dict["num_hidden"] = hyperparams["num_hidden"][i]
 
         # Initialize network
         model = initialize_network(conf_dict)
@@ -111,13 +117,16 @@ def tune_hyperparameters(conf_file):
     # Set of hyperparameters that gives the highest accuracy on the validation set
     best_idx = np.argmax(hyperparams["acc"])
     best_hyperparams = {}
+    best_hyperparams["num_feature_maps"] = hyperparams["num_feature_maps"][best_idx]
+    best_hyperparams["max_pooling"] = hyperparams["max_pooling"][best_idx]
+    best_hyperparams["num_hidden"] = hyperparams["num_hidden"][best_idx]
 
     print(best_hyperparams)
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/MLP_anechoic_mspec.txt"
+    conf_file = "conf/CNN_rev_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
