@@ -93,7 +93,7 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         x_batch, y_batch = read_feat_file(file, conf_dict)
 
         # Normalize features
-        x_batch = scaler.fit_transform(x_batch)
+        x_batch = scaler.transform(x_batch)
 
         # Encode labels and integers
         y_batch = le.transform(y_batch).astype('long')
@@ -152,7 +152,7 @@ def validate(model, le, conf_dict, file_list, scaler):
             x_batch, y_batch = read_feat_file(file, conf_dict)
 
             # Normalize features
-            x_batch = scaler.fit_transform(x_batch)
+            x_batch = scaler.transform(x_batch)
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
