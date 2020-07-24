@@ -1,6 +1,6 @@
 # net.py
 # Author: Kevin Chu
-# Last Modified: 05/20/2020
+# Last Modified: 07/23/2020
 
 import torch
 import torch.nn as nn
@@ -220,6 +220,16 @@ def initialize_weights(m):
 
 
 def initialize_network(conf_dict):
+    """ Create network from configuration file and initialize
+    weights
+
+    Args:
+        conf_dict (dict): conf file represented as a dict
+
+    Returns:
+        model (model): initialized model
+
+    """
     # Instantiate the network
     if conf_dict["model_type"] == "MLP":
         model = MLP(conf_dict)

@@ -31,16 +31,6 @@ import torch.optim as optim
 # Models
 from net import initialize_network
 
-# Evaluation
-from sklearn.metrics import confusion_matrix
-from phone_mapping import phone_to_phoneme
-from phone_mapping import phone_to_moa
-from confusion_matrix import sort_classes
-from confusion_matrix import plot_confusion_matrix
-from confusion_matrix import plot_phoneme_confusion_matrix
-from confusion_matrix import plot_moa_confusion_matrix
-from plot_probs import plot_outputs
-
 from tqdm import tqdm
 import logging
 import re
@@ -67,8 +57,9 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         model (torch.nn.Module): neural network model
         optimizer (optim.SGD): pytorch optimizer
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
-        label_type (str): label type
+        conf_dict (dict): configuration parameters
         file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
         
     Returns:
         none
@@ -122,11 +113,12 @@ def validate(model, le, conf_dict, file_list, scaler):
     Args:
         model (torch.nn.Module): neural network model
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
-        label_type (str): label type
+        conf_dict (dict): configuration parameters
         file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
         
     Returns:
-        avg_loss (float): loss averaged over all batches
+        metrics (dict): loss and accuracy averaged across batches
     
     """
 
@@ -180,6 +172,15 @@ def validate(model, le, conf_dict, file_list, scaler):
 
 
 def read_conf(conf_file):
+    """ Read configuration file as dict
+
+    Args:
+        conf_file (str): configuration file
+
+    Returns:
+        conf_dict (dict): configuration file as dict
+
+    """
     with open(conf_file, "r") as file_obj:
         conf = file_obj.readlines()
 

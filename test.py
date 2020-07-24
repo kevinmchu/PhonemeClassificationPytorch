@@ -25,8 +25,9 @@ def test(model, le, conf_dict, file_list, scale_file):
     Args:
         model (torch.nn.Module): neural network model
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
-        label_type (str): label type
+        conf_dict (dict): configuration parameters
         file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
 
     Returns:
         summary (dict): dictionary containing file name, true class

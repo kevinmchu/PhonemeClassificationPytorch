@@ -46,10 +46,7 @@ def tune_hyperparameters(conf_file):
     """ Train and evaluate a phoneme classification model
 
     Args:
-        model_type (str): model type
-        train_list (list): list of training files
-        valid_list (list): list of validation files
-        label_type (str): phone or phoneme
+        conf_file (str): txt file containing model info
 
     """
     # Read in conf file
