@@ -298,6 +298,7 @@ def train_and_validate(conf_file, num_models):
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
                     if acc[-1] - acc[-11] < 0.001:
+                        logging.info("Detected maximum validation accuracy. Stopping early.")
                         break
 
 
