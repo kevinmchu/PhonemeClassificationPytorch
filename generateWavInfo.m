@@ -27,6 +27,7 @@ function generateWavInfo(timitDir, dataset, conditions, feat_dir, feat_type, fs,
         end
     end
 
+    % Directory where wav and feature information files are saved
     outDir = strcat('data', filesep, dataset, '_', condition);
     if ~isfolder(outDir)
         mkdir(outDir);
@@ -34,18 +35,16 @@ function generateWavInfo(timitDir, dataset, conditions, feat_dir, feat_type, fs,
     
     outFile = strcat(outDir, filesep, 'wav.txt');
 
+    % Obtain list of wav files in TIMIT database, exluding the SA1 and SA2
+    % files to avoid skewing the distribution of phones
     dataDir = strcat(timitDir, filesep, upper(dataset), filesep, '*', filesep, '*', filesep, '*.WAV');
     wavStruct = dir(dataDir);
-    
-    % Remove SA files
     saFiles = {'SA1','SA2'};
     isSA = cell2mat(cellfun(@(c)contains(c,saFiles),extractfield(wavStruct,'name'),'UniformOutput',false));
     wavStruct = wavStruct(~isSA);
-    
-    % List of wav files
     wavFiles = cellfun(@(a,b)strcat(a,filesep,b),extractfield(wavStruct,'folder'),extractfield(wavStruct,'name'),'UniformOutput',false)';
 
-    % Write
+    % Write list of wav files to a txt file
     fid = fopen(outFile, 'w');
     fprintf(fid, '%s\n', wavFiles{:});
     fclose(fid);
@@ -84,12 +83,14 @@ function featInfo = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, f
         end
     end
     
+    % Directory where feature files are saved
     feat_dir = strcat(feat_dir, filesep, dataset, '_', condition);
     if ~isfolder(feat_dir)
         mkdir(feat_dir);
     end
     
-    % Output rirs if reverberant
+    % For reverberant conditions, we save the list of RIRs that were used
+    % to generate the features
     if strcmp(condition, 'rev')
         outFile = strcat('data', filesep, dataset, '_rev', filesep, 'rirs.txt');
         fid = fopen(outFile, 'w');
@@ -98,7 +99,7 @@ function featInfo = generateFeatInfo(timit_dir, feat_dir, dataset, conditions, f
         fclose(fid);
     end
     
-    % Create file with parameter info
+    % Create a file with information about the extracted features
     paramInfo = {};
     paramInfo{1} = sprintf('feat_type = %s', feat_type);
     paramInfo{2} = sprintf('fs = %dHz', fs);

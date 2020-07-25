@@ -1,20 +1,24 @@
 % extractFeaturesAndLabels.m
 % Author: Kevin Chu
-% Last Modified: 07/10/2020
+% Last Modified: 07/25/2020
 
 function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, dataset, conditions)
     % Extracts the features and labels for files in the current dataset,
     % and outputs the information in a feature file
     %
     % Args:
+    %   -feat_type (str): feature type (mfcc or log mel spectrogram)
     %   -fs (double): sampling frequency in Hz
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -num_coeffs (int): number of coefficients
+    %   -use_energy (bool): whether to extract energy as an additional
+    %   feature
     %   -dataset (str): specifies whether training, development, or testing
     %   set
-    %   -feat_dir (str): directory in which to save the features
-    %   -feat_type (str): type of feature to extract
+    %   -conditions (struct): acoustic conditions and the proportion of
+    %   sentences to which they are applied
     %
     % Returns:
     %   none
@@ -33,21 +37,22 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
         end
     end
 
-    % Read in wav info
+    % Read in list of wav files from which to extract features and labels
     wavInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, 'wav.txt');
     fid = fopen(wavInfoFile, 'r');
     C = textscan(fid, '%s');
     wavInfo = C{1,1};
     fclose(fid);
     
-    % Read in feat info
+    % Read in list of files that will be used to store extracted features
+    % and labels
     featInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
     fid = fopen(featInfoFile, 'r');
     C = textscan(fid, '%s');
     featFiles = C{1,1};
     fclose(fid);
     
-    % Conditions
+    % Randomize the conditions that will be applied to each wav file
     allConditions = cell(numel(conditions),1);
     for c = 1:numel(conditions)
         allConditions{c} = repmat({conditions(c).condition},round(conditions(c).proportion*numel(wavInfo)),1);
@@ -68,18 +73,23 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     % Extracts features and labels for a single wav file
     %
     % Args:
-    %   -wavFile (str): current .wav file to analyze
+    %   -wavFile (str): .wav file from which to extract features
     %   -phnFile (str): file containing phone alignments
+    %   -feat_type (str): feature type (mfcc or log mel spectrogram)
     %   -fs (double): sampling frequency in Hz
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -num_coeffs (int): number of coefficients
+    %   -use_energy (bool): whether to use energy as an additional feature
     %   -featFile (str): file containing extracted features and labels
+    %   -condition (str): acoustic condition
     %
     % Returns:
     %   none
 
-    % Load anechoic or reverberant file
+    % If condition is anechoic, load file. If reverberant, apply the
+    % recorded RIR.
     if strcmp(condition,'anechoic')
         [wav,~] = audioread(wavFile);
     else
@@ -92,39 +102,32 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     featsAndLabs = [num2cell(x),y];
     featsAndLabs = featsAndLabs';
     
-    % Append to feature file
+    % Write features and labels to file
     fmt = [repmat('%.4f ', 1, size(x,2)),'%s','\n'];
-    fid = fopen(featFile, 'w'); % if writing
+    fid = fopen(featFile, 'w');
     fprintf(fid, fmt, featsAndLabs{:});
     fclose(fid);
     
 end
 
-%
-% function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(...
-%       signalFileLoc, reverberationFileLoc)
-%
-% This function applies a real-world recorded reverberant condition to
-%   a speech signal.
-%
-% VARIABLES:
-%   signalFileLoc       -   Location of WAV file (path and name) to which
-%                           reverberation will be applied
-%   reverberationFileLoc-   Location of MAT file (path and name) containing
-%                           the real-world recorded reverberation (h_air)
-%                           as well as the information structure (air_info)
-%
-% OUTPUT:
-%   reverberantSignal   -   Sound data of signal after reverberation is
-%                           applied
-%   Fsampling           -   Sampling rate of reverberantSignal
-%
-% Last edited:
-%   3/23/2016 CST
-%
-
 function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(...
     signalFileLoc, reverberationFileLoc)
+    % This function applies a real-world recorded reverberant condition to
+    % a speech signal.
+    %
+    % Args:
+    %   -signalFileLoc (str): location of wav file (path and name) to which
+    %   reverberation will be applied
+    %   -reverberationFileLoc (str): location of mat file (path and name)
+    %   containing the real-world recorded reverberation (h_air) as well as
+    %   the information structure (air_info)
+    %
+    % Returns:
+    %   -reverberantSignal (array): sound data of signal after reverberation
+    %   is applied
+    %   -Fsampling (double): sampling rate of reverberantSignal
+    %
+    % Taken from CST code
 
     % Load WAV file
     [signal, Fsampling] = audioread(signalFileLoc);
@@ -146,19 +149,23 @@ function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(..
 end
 
 function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy)
-    % Extracts features for a single file
+    % Calculate static features for a single wav file
     %
     % Args:
     %   -wav (nx1 array): audio data
+    %   -feat_type (str): feature type (mfcc or log mel spectrogram)
     %   -fs (double): sampling frequency in Hz
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -num_coeffs (int): number of coefficients
+    %   -use_energy (bool): whether to use energy as an additional feature
     %
     % Returns:
     %   -x (nxnFeatures matrix): matrix of features
 
-    % Splicing parameters
+    % Calculate either mel-frequency cepstral coefficients (mfcc) or log
+    % mel spectrogram (mspec)
     switch feat_type
         case 'mfcc'
             if use_energy
@@ -176,18 +183,31 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
 end
 
 function labels = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condition)
+    % Extracts framewise ground truth labels for a given wav file
+    %
+    % Args:
+    %   -wav (array): audio data
+    %   -phnFile (str): file with phone labels
+    %   -fs (double): sampling frequency in Hz
+    %   -frame_len (double): length of analysis frame in sec
+    %   -frame_shift (double): amount by which each analysis frame is
+    %   shifted in sec
+    %   -condition (str): acoustic condition
 
-    % Read in phn file
+    % Reads in alignments from phnFile
     alignments = readPhn(phnFile);
     
+    % Ensure that the last phone ends when the signal ends
     alignments{end,2} = length(wav);
     
-    % Correct alignments if reverberant
+    % Reverberant signal will be shifted wrt the phone labels due to the
+    % time delay introduced by the RIR. We correct the phone alignments to
+    % account for this shift.
     if ~strcmp(condition,'anechoic')
         alignments = correctAlignments(alignments,condition);
     end
     
-    % Convert to frame indices
+    % Convert sample indices into frame indices
     alignments = samples2Frames(alignments, frame_len, frame_shift, fs);
     
     % Format into cell array of labels
@@ -200,7 +220,7 @@ function alignments = readPhn(phnFile)
     % Reads in alignments from phn file
     %
     % Args:
-    %   phnFile (str): file with phoneme labels
+    %   phnFile (str): file with phone labels
     %
     % Returns:
     %   alignments (double matrix): contains beginning and end times of
@@ -219,9 +239,9 @@ function newAlignments = correctAlignments(alignments, rirFile)
     % alignments to account for this shift.
     %
     % Args:
-    %   alignments (nx3 cell array): contains beginning and end times of
+    %   -alignments (nx3 cell array): contains beginning and end times of
     %   each phoneme
-    %   rirFile (str): name of current RIR file
+    %   -rirFile (str): name of current RIR file
     %
     % Returns:
     %   alignments (nx3 cell array): corrected alignments
@@ -262,18 +282,21 @@ function delay = calculateReverbDelay(air_info, fs)
     % Calculates delay of reverberant signal wrt anechoic signal
     %
     % Args:
-    %   air_info (struct): contains info about the rir
-    %   fs (double): sampling frequency in Hz
+    %   -air_info (struct): contains info about the rir
+    %   -fs (double): sampling frequency in Hz
     %
     % Returns:
     %   delay (double): delay in samples
     
-    c = 343; % speed of sound, m/s
+    % Speed of sound in m/s
+    c = 343;
+    
+    % Calculate delay in samples
     switch air_info.room
         case 'aula_carolina'
             delay = round(air_info.distance/c * fs);
         case {'booth', 'lecture', 'meeting', 'office'}
-            delay = round((air_info.distance/100)/c * fs); % delay in samples
+            delay = round((air_info.distance/100)/c * fs);
         case 'stairway'
             delay = round(air_info.d_speaker_mic/c * fs);
     end
@@ -281,14 +304,14 @@ function delay = calculateReverbDelay(air_info, fs)
 end
 
 function alignmentsNew = samples2Frames(alignments, frame_len, frame_shift, fs)
-    % Converts sample numbers into frame indices
+    % Converts sample indices into frame indices
     %
     % Args:
-    %   alignments (cell array): contains beginning and end time (in terms
+    %   -alignments (cell array): contains beginning and end time (in terms
     %   of samples) for each phoneme
-    %   frame_len (double): length of ASR feature frame in s
-    %   frame_shift (double): shift of ASR feature frame in s
-    %   fs (double): sampling frequency in Hz
+    %   -frame_len (double): length of ASR feature frame in s
+    %   -frame_shift (double): shift of ASR feature frame in s
+    %   -fs (double): sampling frequency in Hz
     %
     % Returns:
     %   frames (array): array of frame indices
