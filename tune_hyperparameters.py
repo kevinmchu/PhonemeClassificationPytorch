@@ -51,7 +51,7 @@ def tune_hyperparameters(conf_file):
     """
     # Read in conf file
     conf_dict = read_conf(conf_file)
-    conf_dict["num_hidden"] = 90
+    #conf_dict["num_hidden"] = 90
 
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
@@ -124,7 +124,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mspec.txt"
+    conf_file = "conf/CNN_anechoic_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)

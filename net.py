@@ -56,8 +56,9 @@ class CNN(nn.Module):
 
         width = torch.floor(torch.tensor((self.window_size - self.kernel_size[1] + 1)/self.max_pool[1])).to(int)
         height = torch.floor(torch.tensor((int(conf_dict["num_coeffs"]) + int(conf_dict["use_energy"]) - self.kernel_size[0] + 1)/self.max_pool[0])).to(int)
-        self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
-        self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
+        #self.fc1 = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_hidden"])
+        #self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
+        self.fc = nn.Linear(width*height*conf_dict["num_feature_maps"], conf_dict["num_classes"])
 
     def forward(self, x):
         x = self.input_to_featmap(x)
@@ -65,8 +66,9 @@ class CNN(nn.Module):
         # Pass through network
         x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
         x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
-        x = torch.sigmoid(self.fc1(x))
-        x = self.fc2(x)
+        #x = torch.sigmoid(self.fc1(x))
+        #x = self.fc2(x)
+        x = self.fc(x)
 
         return F.log_softmax(x, dim=1)
 
