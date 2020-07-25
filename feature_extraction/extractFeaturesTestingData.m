@@ -30,15 +30,19 @@ proportions = {1};
 % Create variables based on user inputs
 for i = 1:numel(conditions)
     if ~strcmp(conditions{i},'anechoic')
-        conditions{i} = strcat(rir_dir,filesep,conditions{i});
+        conditions{i} = strcat(rir_dir, filesep, conditions{i});
     end
 end
 
-conditions = struct('condition',conditions,'proportion',proportions);
+conditions = struct('condition', conditions, 'proportion', proportions);
 
 % Create data files
-generateWavInfo(timit_dir,'test',conditions,feat_dir,feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy);
+generateWavInfo(timit_dir, 'test', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
+% Create feature info files and feature directories
+generateFeatInfo(timit_dir, feat_dir, 'test', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type,fs,frame_len,frame_shift,num_coeffs,use_energy,'test',conditions);
+extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, 'test', conditions);
