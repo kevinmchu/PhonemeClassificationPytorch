@@ -23,6 +23,8 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     % Returns:
     %   none
     
+    rng('shuffle');
+    
     % Condition
     if isequal(extractfield(conditions, 'condition'), {'anechoic'})
         condition = 'anechoic';
@@ -38,7 +40,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     end
 
     % Read in list of wav files from which to extract features and labels
-    wavInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, 'wav.txt');
+    wavInfoFile = strcat('../data', filesep, dataset, '_', condition, filesep, 'wav.txt');
     fid = fopen(wavInfoFile, 'r');
     C = textscan(fid, '%s');
     wavInfo = C{1,1};
@@ -46,7 +48,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     
     % Read in list of files that will be used to store extracted features
     % and labels
-    featInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
+    featInfoFile = strcat('../data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
     fid = fopen(featInfoFile, 'r');
     C = textscan(fid, '%s');
     featFiles = C{1,1};

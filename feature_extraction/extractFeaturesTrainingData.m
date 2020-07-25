@@ -63,14 +63,14 @@ for i = 1:numel(conditions)
     end
 end
 conditions = struct('condition', conditions, 'proportion', num2cell(proportions));
-
-% Create data files
-generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-
-% Create feature info files and feature directories
-generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+% 
+% % Create data files
+% generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+% generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+% 
+% % Create feature info files and feature directories
+% generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+% generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');

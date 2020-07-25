@@ -38,7 +38,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     end
     
     % Read in list of wav files from which to extract features and labels
-    wavInfoFile = strcat('data', filesep, dataset, '_', condition, filesep, 'wav.txt');
+    wavInfoFile = strcat('../data', filesep, dataset, '_', condition, filesep, 'wav.txt');
     fid = fopen(wavInfoFile, 'r');
     C = textscan(fid, '%s');
     wavInfo = C{1,1};
@@ -53,7 +53,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     % For reverberant conditions, we save the list of RIRs that were used
     % to generate the features
     if strcmp(condition, 'rev')
-        outFile = strcat('data', filesep, dataset, '_rev', filesep, 'rirs.txt');
+        outFile = strcat('../data', filesep, dataset, '_rev', filesep, 'rirs.txt');
         fid = fopen(outFile, 'w');
         rirsAndProps = cellfun(@(a,b)sprintf('%s %s', a, b), extractfield(conditions, 'condition'), cellfun(@num2str, num2cell(extractfield(conditions, 'proportion')), 'UniformOutput', false), 'UniformOutput', false);
         fprintf(fid, '%s\n', rirsAndProps{:});
@@ -72,7 +72,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     else
         paramInfo{6} = strcat('use_energy = False');
     end
-    outFile = strcat('data', filesep, dataset, '_', condition, filesep, feat_type, '_info.txt');
+    outFile = strcat('../data', filesep, dataset, '_', condition, filesep, feat_type, '_info.txt');
     fid = fopen(outFile, 'w');
     fprintf(fid, '%s\n', paramInfo{:});
     fclose(fid);
@@ -80,7 +80,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     % Create file with list of feature files
     featInfo = cellfun(@(c)strrep(c, strcat(timit_dir, filesep, upper(dataset)), feat_dir), wavInfo, 'UniformOutput', false);
     featInfo = cellfun(@(c)strrep(c, '.WAV', '.txt'), featInfo, 'UniformOutput', false);
-    outFile = strcat('data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
+    outFile = strcat('../data', filesep, dataset, '_', condition, filesep, feat_type, '.txt');
     fid = fopen(outFile, 'w');
     fprintf(fid, '%s\n', featInfo{:});
     fclose(fid);

@@ -29,7 +29,7 @@ function generateWavInfo(timitDir, dataset, conditions)
     end
 
     % Directory where wav and feature information files are saved
-    outDir = strcat('data', filesep, dataset, '_', condition);
+    outDir = strcat('../data', filesep, dataset, '_', condition);
     if ~isfolder(outDir)
         mkdir(outDir);
     end
