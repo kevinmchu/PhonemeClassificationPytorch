@@ -1,7 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import random
-import time
 import os
 import os.path
 import pickle
@@ -10,17 +8,12 @@ from pathlib import Path
 # Features
 from feature_extraction import fit_normalizer
 from feature_extraction import read_feat_file
-from sklearn import preprocessing
 
 # Labels
-from phone_mapping import get_phone_list
-from phone_mapping import get_phoneme_list
-from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
 # Training and testing data
 from validation import read_feat_list
-from validation import train_val_split
 
 # PyTorch
 import torch
@@ -223,6 +216,9 @@ def train_and_validate(conf_file, num_models):
     Args:
         conf_file (str): txt file containing model info
         num_models (int): number of instances to of model to train
+
+    Returns
+        none
 
     """
     # Read in conf file
