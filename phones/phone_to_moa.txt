@@ -44,7 +44,7 @@ oy	vowel
 p	stop
 pau	silence
 pcl	silence
-q	stop
+q	silence
 r	semivowel
 s	fricative
 sh	fricative

@@ -30,9 +30,12 @@ def get_phoneme_list():
         phonemes (list): list of phonemes organized by manner of articulation
 
     """
-    # Phoneme definitions according to Lee and Hon (note: zh is really sh)
+    # Phoneme definitions according to Lee and Hon, 1989*
+    # Note:
+    # Lee and Hon (1989) consider 'zh' to be 'sh'
+    # *Instead of removing the glottal stop q, it has been mapped to silence
     phonemes = ["sil",
-                "p", "b", "t", "d", "k", "g", "dx", "q",
+                "p", "b", "t", "d", "k", "g", "dx",
                 "ch", "jh",
                 "s", "z", "sh", "f", "v", "th", "dh",
                 "m", "n", "ng",

@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # Necessary files
     conf_file = "conf/LSTM_rev_mspec.txt"
     model_idx = 2
-    test_feat_list = "data/train_rev/mspec.txt"
+    test_feat_list = "data/train_anechoic/mspec.txt"
 
     # Read configuration file
     conf_dict = read_conf(conf_file)
@@ -108,6 +108,6 @@ if __name__ == '__main__':
 
     # Plot phone confusion matrix
     le_phone = get_label_encoder(conf_dict["label_type"])
-    plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
-    #plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    #plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
+    plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
     #plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)

@@ -44,7 +44,7 @@ oy	oy	oy
 p	p	p
 pau	sil	sil
 pcl	cl	sil
-q	q	q
+q	sil	sil
 r	r	r
 s	s	s
 sh	sh	sh
