@@ -1,6 +1,6 @@
 # phoneMapping.py
 # Author: Kevin Chu
-# Last Modified: 05/11/2020
+# Last Modified: 07/27/2020
 
 from sklearn import preprocessing
 
@@ -12,12 +12,12 @@ def get_phone_list():
         phones (list): list of phones organized by manner of articulation
 
     """
-    phones = ["pau", "epi", "h#",
-              "b", "bcl", "d", "dcl", "g", "gcl", "p", "pcl", "t", "tcl", "k", "kcl", "dx", "q",
+    phones = ["pau", "epi", "h#", "pcl", "bcl", "tcl", "dcl", "kcl", "gcl",
+              "p", "b", "t", "d", "k", "g", "dx", "q",
               "jh", "ch",
-              "s", "sh", "z", "zh", "f", "th", "v", "dh",
-              "m", "n", "ng", "em", "en", "eng", "nx",
-              "l", "r", "w", "y", "hh", "hv", "el",
+              "s", "z", "sh", "zh", "f", "v", "th", "dh",
+              "m", "em", "n", "en", "nx", "ng", "eng",
+              "l", "el", "r", "w", "y", "hh", "hv",
               "iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"]
 
     return phones
