@@ -14,7 +14,7 @@ def get_phone_list():
     """
     phones = ["pau", "epi", "h#", "pcl", "bcl", "tcl", "dcl", "kcl", "gcl",
               "p", "b", "t", "d", "k", "g", "dx", "q",
-              "jh", "ch",
+              "ch", "jh",
               "s", "z", "sh", "zh", "f", "v", "th", "dh",
               "m", "em", "n", "en", "nx", "ng", "eng",
               "l", "el", "r", "w", "y", "hh", "hv",
@@ -32,9 +32,9 @@ def get_phoneme_list():
     """
     # Phoneme definitions according to Lee and Hon (note: zh is really sh)
     phonemes = ["sil",
-                "b", "d", "g", "p", "t", "k", "dx",
+                "p", "b", "t", "d", "k", "g", "dx", "q",
                 "ch", "jh",
-                "s", "sh", "z", "f", "v", "th", "dh",
+                "s", "z", "sh", "f", "v", "th", "dh",
                 "m", "n", "ng",
                 "l", "r", "w", "y", "hh",
                 "aa", "ae", "ah", "aw", "ay", "eh", "er", "ey", "ih", "iy", "ow", "oy", "uh", "uw"]

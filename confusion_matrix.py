@@ -119,4 +119,4 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	plt.colorbar()
 	plt.clim(0, 1)
 	plt.show()
-	plt.savefig("fig.png", bbox_inches='tight')
+	#plt.savefig("fig.png", bbox_inches='tight')
