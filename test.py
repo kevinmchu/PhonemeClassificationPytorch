@@ -1,10 +1,10 @@
-from main import get_device
+from train import get_device
 import pickle
 import torch
 from tqdm import tqdm
 from feature_extraction import read_feat_file
 import numpy as np
-from main import read_conf
+from train import read_conf
 import os
 from validation import read_feat_list
 

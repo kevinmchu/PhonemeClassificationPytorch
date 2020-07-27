@@ -65,7 +65,7 @@ class CNN(nn.Module):
         # Pass through network
         x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
         x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
-        x = torch.sigmoid(self.fc1(x))
+        x = torch.relu(self.fc1(x))
         x = self.fc2(x)
 
         return F.log_softmax(x, dim=1)

@@ -18,10 +18,10 @@ from net import initialize_network
 from tqdm import tqdm
 import logging
 
-from main import get_device
-from main import train
-from main import validate
-from main import read_conf
+from train import get_device
+from train import train
+from train import validate
+from train import read_conf
 
 
 def tune_hyperparameters(conf_file):
