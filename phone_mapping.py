@@ -127,8 +127,8 @@ def phone_to_moa(phones):
         moa (list): list of phones converted to manner of articulation
     """
     
-    # Phoneme map file
-    file = "phones/phone_to_moa.txt"
+    # Phone to manner of articulation mapping as defined by TIMIT docs
+    file = "phones/phone_to_moa_timit.txt"
     
     # Open
     file_obj = open(file, "r")
