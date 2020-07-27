@@ -19,7 +19,7 @@ from phone_mapping import get_phoneme_list
 from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
-def test(model, le, conf_dict, file_list, scale_file):
+def predict(model, le, conf_dict, file_list, scale_file):
     """ Test phoneme classification model
 
     Args:
@@ -78,27 +78,40 @@ def test(model, le, conf_dict, file_list, scale_file):
     return summary
 
 
-if __name__ == '__main__':
-    # Necessary files
-    conf_file = "conf/LSTM_rev_mspec.txt"
-    model_idx = 2
-    test_feat_list = "data/train_anechoic/mspec.txt"
+def test(conf_file, model_idx, test_set, feat_type):
+    """ Make predictions and calculate performance metrics on
+    the testing data.
+
+    Args:
+        conf_file (str): txt file containing model info
+        model_idx (int): instance of the model
+        test_set (str): specifies testing condition
+        feat_type (str): mspec or mfcc
+
+    Returns:
+        none
+
+    """
 
     # Read configuration file
     conf_dict = read_conf(conf_file)
 
-    # Testing
+    # List of feature files for the testing data
+    test_feat_list = "data/" + test_set + "/" + feat_type + ".txt"
+
+    # Load trained model
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
                              "model" + str(model_idx))
     model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
 
+    # Read in list of feature files
     test_list = read_feat_list(test_feat_list)
+
+    # File containing StandardScaler computed based on the training data
     scale_file = model_dir + "/scaler.pickle"
 
-    summary = test(model, get_label_encoder(conf_dict["label_type"]), conf_dict, test_list, scale_file)
-    y_prob = summary['y_prob'][0]
-    y_true = summary['y_true'][0]
-    #plot_outputs(y_prob, y_true, get_label_encoder(label_type))
+    # Get predictions
+    summary = predict(model, get_label_encoder(conf_dict["label_type"]), conf_dict, test_list, scale_file)
     summary['y_true'] = np.concatenate(summary['y_true'])
     summary['y_pred'] = np.concatenate(summary['y_pred'])
 
@@ -111,3 +124,13 @@ if __name__ == '__main__':
     #plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
     plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
     #plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+
+
+if __name__ == '__main__':
+    # Inputs
+    conf_file = "conf/LSTM_rev_mspec.txt"
+    model_idx = 2
+    test_set = "dev_rev"
+    feat_type = "mspec"
+
+    test(conf_file, model_idx, test_set, feat_type)

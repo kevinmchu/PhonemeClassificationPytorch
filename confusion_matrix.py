@@ -96,7 +96,6 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	"""
 	# Calculate accuracy
 	accuracy = float(np.sum(y_true == y_pred))/len(y_true)
-	print("Accuracy: ", round(accuracy, 3))
 
 	# Calculate normalized confusion matrix
 	cm = confusion_matrix(y_true, y_pred)
