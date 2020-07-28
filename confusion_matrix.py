@@ -81,6 +81,38 @@ def plot_moa_confusion_matrix(y_true, y_pred, le, label_type, decode_dir):
 	plot_confusion_matrix(moa_true, moa_pred, le_moa, label_type, get_moa_list(), decode_dir)
 
 
+def write_confmat(cm, classes, decode_dir, label_type):
+	"""
+
+	Args:
+		cm (np.array): confusion matrix in terms of counts
+		classes (list): list of sorted classes
+		decode_dir (str): directory in which to save the conf mat
+		label_type (str): label type
+
+	Returns:
+		none
+
+	"""
+
+	# Name of file containing confusion matrix
+	cm_file = decode_dir + "/" + label_type + "_confmat.txt"
+
+	with open(cm_file, 'w') as f:
+		# Label for true class
+		for label in classes:
+			f.write('\t' + label)
+		f.write('\n')
+
+		for i, label in enumerate(classes):
+			# Label for predicted class
+			f.write(label)
+			# Confusion matrix
+			for j in range(np.shape(cm)[1]):
+				f.write('\t' + str(cm[i, j]))
+			f.write('\n')
+
+
 def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir):
 	""" Plots confusion matrix
 
@@ -101,7 +133,6 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 
 	# Calculate normalized confusion matrix
 	cm = confusion_matrix(y_true, y_pred)
-	cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
 
 	# Labels
 	labels_int = np.arange(0, len(np.unique(y_true)), 1)
@@ -110,6 +141,13 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 	# Sort
 	sorted_cm = sort_classes(cm, labels_str, sort_order)
 
+	# Save to file
+	write_confmat(cm, sort_order, decode_dir, label_type)
+
+	# Convert to proportions
+	sorted_cm = sorted_cm.astype('float') / np.tile(np.reshape(np.sum(sorted_cm, axis=1), (len(sorted_cm), 1)), (1, len(sorted_cm)))
+
+	# Plot confusion matrix as a heat map
 	plt.figure(figsize=(10, 10))
 	plt.imshow(sorted_cm)
 	plt.title("Percent Correct = {}%".format(round(accuracy*100, 1)))
