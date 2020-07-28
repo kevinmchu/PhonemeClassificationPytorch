@@ -82,7 +82,7 @@ def plot_moa_confusion_matrix(y_true, y_pred, le, label_type, decode_dir):
 
 
 def write_confmat(cm, classes, decode_dir, label_type):
-	"""
+	""" Writes confusion matrix to a txt file
 
 	Args:
 		cm (np.array): confusion matrix in terms of counts
@@ -127,9 +127,13 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 
 	"""
 	# Calculate accuracy
-	accuracy = float(np.sum(y_true == y_pred))/len(y_true)
+	correct = np.sum(y_true == y_pred)
+	total = len(y_true)
+	accuracy = correct/total
 	with open(decode_dir+"/"+label_type+"_accuracy.txt", 'w') as f:
-		f.write(str(accuracy))
+		f.write("Accuracy: " + str(accuracy) + "\n")
+		f.write("Correct: " + str(correct) + "\n")
+		f.write("Total: " + str(total) + "\n")
 
 	# Calculate normalized confusion matrix
 	cm = confusion_matrix(y_true, y_pred)

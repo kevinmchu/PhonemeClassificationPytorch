@@ -136,8 +136,11 @@ def test(conf_file, model_idx, test_set, feat_type):
     # Plot confusion matrix
     if conf_dict["label_type"] == "phone":
         plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_phone_list(), decode_dir)
+        plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, "phoneme", decode_dir)
+        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
     elif conf_dict["label_type"] == "phoneme":
         plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
+        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
     elif conf_dict["label_type"] == "moa":
         plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
 
