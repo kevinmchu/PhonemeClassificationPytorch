@@ -68,8 +68,8 @@ def tune_hyperparameters(conf_file, hyperparams_file):
     hyperparams_dict = read_hyperparams(hyperparams_file)
 
     # Track accuracy of each combo of hyperparameters
-    num_combos = list(hyperparams_dict.keys())[0]
-    hyperparams_dict["acc"] = np.zeros((num_combos,))
+    num_combos = len(hyperparams_dict[list(hyperparams_dict.keys())[0]])
+    hyperparams_acc = np.zeros((num_combos,))
 
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
@@ -119,10 +119,10 @@ def tune_hyperparameters(conf_file, hyperparams_file):
                     break
 
         # Save the accuracy of the best model for current set of hyperparameters
-        hyperparams_dict["acc"][i] = max_acc
+        hyperparams_acc[i] = max_acc
 
     # # Set of hyperparameters that gives the highest accuracy on the validation set
-    # best_idx = np.argmax(hyperparams_dict["acc"])
+    # best_idx = np.argmax(hyperparams_acc)
     # best_hyperparams = {}
     # best_hyperparams["num_feature_maps"] = hyperparams_dict["num_feature_maps"][best_idx]
     # best_hyperparams["max_pooling"] = hyperparams_dict["max_pooling"][best_idx]
