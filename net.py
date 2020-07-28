@@ -1,6 +1,6 @@
 # net.py
 # Author: Kevin Chu
-# Last Modified: 05/20/2020
+# Last Modified: 07/23/2020
 
 import torch
 import torch.nn as nn
@@ -65,7 +65,7 @@ class CNN(nn.Module):
         # Pass through network
         x = F.max_pool2d(torch.sigmoid(self.conv1(x)), self.max_pool)
         x = x.view(x.size()[0], x.size()[1]*x.size()[2]*x.size()[3])
-        x = torch.sigmoid(self.fc1(x))
+        x = torch.relu(self.fc1(x))
         x = self.fc2(x)
 
         return F.log_softmax(x, dim=1)
@@ -86,7 +86,7 @@ class CNN(nn.Module):
         idx = torch.linspace(0, self.window_size-1, self.window_size)
         idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
         idx = idx.to(int)
-        x = x[0, :, :, idx]#.view(batch_sz, 2, int(self.num_features/2), self.window_size)
+        x = x[0, :, :, idx]
         x = x.permute(2, 0, 1, 3)
 
         return x
@@ -220,6 +220,16 @@ def initialize_weights(m):
 
 
 def initialize_network(conf_dict):
+    """ Create network from configuration file and initialize
+    weights
+
+    Args:
+        conf_dict (dict): conf file represented as a dict
+
+    Returns:
+        model (model): initialized model
+
+    """
     # Instantiate the network
     if conf_dict["model_type"] == "MLP":
         model = MLP(conf_dict)

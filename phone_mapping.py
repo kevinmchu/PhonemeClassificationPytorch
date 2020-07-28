@@ -1,6 +1,6 @@
 # phoneMapping.py
 # Author: Kevin Chu
-# Last Modified: 05/11/2020
+# Last Modified: 07/27/2020
 
 from sklearn import preprocessing
 
@@ -12,12 +12,12 @@ def get_phone_list():
         phones (list): list of phones organized by manner of articulation
 
     """
-    phones = ["pau", "epi", "h#",
-              "b", "bcl", "d", "dcl", "g", "gcl", "p", "pcl", "t", "tcl", "k", "kcl", "dx", "q",
-              "jh", "ch",
-              "s", "sh", "z", "zh", "f", "th", "v", "dh",
-              "m", "n", "ng", "em", "en", "eng", "nx",
-              "l", "r", "w", "y", "hh", "hv", "el",
+    phones = ["pau", "epi", "h#", "pcl", "bcl", "tcl", "dcl", "kcl", "gcl",
+              "p", "b", "t", "d", "k", "g", "dx", "q",
+              "ch", "jh",
+              "s", "z", "sh", "zh", "f", "v", "th", "dh",
+              "m", "em", "n", "en", "nx", "ng", "eng",
+              "l", "el", "r", "w", "y", "hh", "hv",
               "iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"]
 
     return phones
@@ -30,11 +30,14 @@ def get_phoneme_list():
         phonemes (list): list of phonemes organized by manner of articulation
 
     """
-    # Phoneme definitions according to Lee and Hon (note: zh is really sh)
+    # Phoneme definitions according to Lee and Hon, 1989*
+    # Note:
+    # Lee and Hon (1989) consider 'zh' to be 'sh'
+    # *Instead of removing the glottal stop q, it has been mapped to silence
     phonemes = ["sil",
-                "b", "d", "g", "p", "t", "k", "dx",
+                "p", "b", "t", "d", "k", "g", "dx",
                 "ch", "jh",
-                "s", "sh", "z", "f", "v", "th", "dh",
+                "s", "z", "sh", "f", "v", "th", "dh",
                 "m", "n", "ng",
                 "l", "r", "w", "y", "hh",
                 "aa", "ae", "ah", "aw", "ay", "eh", "er", "ey", "ih", "iy", "ow", "oy", "uh", "uw"]
@@ -124,8 +127,8 @@ def phone_to_moa(phones):
         moa (list): list of phones converted to manner of articulation
     """
     
-    # Phoneme map file
-    file = "phones/phone_to_moa.txt"
+    # Phone to manner of articulation mapping as defined by TIMIT docs
+    file = "phones/phone_to_moa_timit.txt"
     
     # Open
     file_obj = open(file, "r")

@@ -1,7 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import random
-import time
 import os
 import os.path
 import pickle
@@ -10,17 +8,12 @@ from pathlib import Path
 # Features
 from feature_extraction import fit_normalizer
 from feature_extraction import read_feat_file
-from sklearn import preprocessing
 
 # Labels
-from phone_mapping import get_phone_list
-from phone_mapping import get_phoneme_list
-from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
 # Training and testing data
 from validation import read_feat_list
-from validation import train_val_split
 
 # PyTorch
 import torch
@@ -30,16 +23,6 @@ import torch.optim as optim
 
 # Models
 from net import initialize_network
-
-# Evaluation
-from sklearn.metrics import confusion_matrix
-from phone_mapping import phone_to_phoneme
-from phone_mapping import phone_to_moa
-from confusion_matrix import sort_classes
-from confusion_matrix import plot_confusion_matrix
-from confusion_matrix import plot_phoneme_confusion_matrix
-from confusion_matrix import plot_moa_confusion_matrix
-from plot_probs import plot_outputs
 
 from tqdm import tqdm
 import logging
@@ -67,8 +50,9 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         model (torch.nn.Module): neural network model
         optimizer (optim.SGD): pytorch optimizer
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
-        label_type (str): label type
+        conf_dict (dict): configuration parameters
         file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
         
     Returns:
         none
@@ -93,7 +77,7 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         x_batch, y_batch = read_feat_file(file, conf_dict)
 
         # Normalize features
-        x_batch = scaler.fit_transform(x_batch)
+        x_batch = scaler.transform(x_batch)
 
         # Encode labels and integers
         y_batch = le.transform(y_batch).astype('long')
@@ -122,11 +106,12 @@ def validate(model, le, conf_dict, file_list, scaler):
     Args:
         model (torch.nn.Module): neural network model
         le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
-        label_type (str): label type
+        conf_dict (dict): configuration parameters
         file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
         
     Returns:
-        avg_loss (float): loss averaged over all batches
+        metrics (dict): loss and accuracy averaged across batches
     
     """
 
@@ -152,7 +137,7 @@ def validate(model, le, conf_dict, file_list, scaler):
             x_batch, y_batch = read_feat_file(file, conf_dict)
 
             # Normalize features
-            x_batch = scaler.fit_transform(x_batch)
+            x_batch = scaler.transform(x_batch)
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
@@ -180,6 +165,15 @@ def validate(model, le, conf_dict, file_list, scaler):
 
 
 def read_conf(conf_file):
+    """ Read configuration file as dict
+
+    Args:
+        conf_file (str): configuration file
+
+    Returns:
+        conf_dict (dict): configuration file as dict
+
+    """
     with open(conf_file, "r") as file_obj:
         conf = file_obj.readlines()
 
@@ -216,14 +210,15 @@ def read_conf(conf_file):
     return conf_dict
 
 
-def train_and_validate(conf_file):
+def train_and_validate(conf_file, num_models):
     """ Train and evaluate a phoneme classification model
 
     Args:
-        model_type (str): model type
-        train_list (list): list of training files
-        valid_list (list): list of validation files
-        label_type (str): phone or phoneme
+        conf_file (str): txt file containing model info
+        num_models (int): number of instances to of model to train
+
+    Returns
+        none
 
     """
     # Read in conf file
@@ -232,10 +227,14 @@ def train_and_validate(conf_file):
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
 
-    for i in range(1):
-        # Model directory
+    for i in range(num_models):
+        # Model directory - create new folder for each new instance of a model
         model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
-        Path(model_dir).mkdir(parents=True, exist_ok=True)
+        while os.path.exists(model_dir):
+            i += 1
+            model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
+                                     "model" + str(i))
+        Path(model_dir).mkdir(parents=True)
 
         # Copy config file
         copyfile(conf_file, (conf_file.replace("conf/", model_dir + "/")).replace(conf_file.split("/")[1], "conf.txt"))
@@ -295,12 +294,14 @@ def train_and_validate(conf_file):
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
                     if acc[-1] - acc[-11] < 0.001:
+                        logging.info("Detected maximum validation accuracy. Stopping early.")
                         break
 
 
 if __name__ == '__main__':
-    # Necessary files
-    conf_file = "conf/LSTM_anechoic_mspec.txt"
+    # User inputs
+    conf_file = "conf/CNN_rev_mspec.txt"
+    num_models = 1
 
     # Train and validate
-    train_and_validate(conf_file)
+    train_and_validate(conf_file, num_models)

@@ -1,31 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import random
-import time
-import os
-import os.path
-import pickle
-from pathlib import Path
 
 # Features
 from feature_extraction import fit_normalizer
-from feature_extraction import read_feat_file
-from sklearn import preprocessing
 
 # Labels
-from phone_mapping import get_phone_list
-from phone_mapping import get_phoneme_list
-from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
 # Training and testing data
 from validation import read_feat_list
-from validation import train_val_split
 
 # PyTorch
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 # Models
@@ -33,28 +17,23 @@ from net import initialize_network
 
 from tqdm import tqdm
 import logging
-import re
-from shutil import copyfile
 
-from main import get_device
-from main import train
-from main import validate
-from main import read_conf
+from train import get_device
+from train import train
+from train import validate
+from train import read_conf
 
 
 def tune_hyperparameters(conf_file):
     """ Train and evaluate a phoneme classification model
 
     Args:
-        model_type (str): model type
-        train_list (list): list of training files
-        valid_list (list): list of validation files
-        label_type (str): phone or phoneme
+        conf_file (str): txt file containing model info
 
     """
     # Read in conf file
     conf_dict = read_conf(conf_file)
-    conf_dict["num_hidden"] = 90
+    #conf_dict["num_hidden"] = 90
 
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
@@ -127,7 +106,7 @@ def tune_hyperparameters(conf_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/LSTM_anechoic_mspec.txt"
+    conf_file = "conf/CNN_anechoic_mspec.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file)
