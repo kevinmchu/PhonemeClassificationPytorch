@@ -22,9 +22,39 @@ from train import get_device
 from train import train
 from train import validate
 from train import read_conf
+from train import convert_string
 
 
-def tune_hyperparameters(conf_file):
+def read_hyperparams(hyperparams_file):
+    """ Read in hyperparams file as a dictionary
+
+    Args:
+        hyperparams_file (str): name of hyperparameter file
+
+    Returns:
+        hyperparams_dict (dict): hyperparameter file expressed as dict
+
+    """
+
+    with open(hyperparams_file, "r") as f:
+        x = f.readlines()
+
+    x = list(map(lambda a: a.replace('\n', ''), x))
+    x = list(map(lambda a: a.split('\t'), x))
+
+    # Convert list of hyperparameters to dict
+    hyperparams_dict = {}
+    for key in x[0]:
+        hyperparams_dict[key] = []
+
+    for i in range(1, len(x)):
+        for j in range(len(x[0])):
+            hyperparams_dict[x[0][j]].append(convert_string(x[0][j], x[i][j]))
+
+    return hyperparams_dict
+
+
+def tune_hyperparameters(conf_file, hyperparams_file):
     """ Train and evaluate a phoneme classification model
 
     Args:
@@ -34,6 +64,9 @@ def tune_hyperparameters(conf_file):
     # Read in conf file
     conf_dict = read_conf(conf_file)
     #conf_dict["num_hidden"] = 90
+
+    # Read in hyperparams file
+    hyperparams_dict = read_hyperparams(hyperparams_file)
 
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
@@ -107,6 +140,7 @@ def tune_hyperparameters(conf_file):
 if __name__ == '__main__':
     # Necessary files
     conf_file = "conf/CNN_anechoic_mspec.txt"
+    hyperparams_file = "hyperparams/CNN_hyperparams.txt"
 
     # Train and validate
-    tune_hyperparameters(conf_file)
+    tune_hyperparameters(conf_file, hyperparams_file)

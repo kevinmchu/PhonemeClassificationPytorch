@@ -164,6 +164,41 @@ def validate(model, le, conf_dict, file_list, scaler):
     return metrics
 
 
+def convert_string(key, value):
+    """ Convert string into appropriate data type based on the
+    dictionary key
+
+    Args:
+        key (str): dictionary key
+        value (str): value expressed as a string
+
+    Returns:
+        converted_value (varies): value converted into appropriate data type
+
+    """
+
+    try:
+        # Ints
+        if "num" in key or "size" in key:
+            converted_value = int(value)
+        # Floats
+        else:
+            converted_value = float(value)
+    except ValueError:
+        # Tuple
+        if re.match("\(\d*,\d*\)", value):
+            temp = re.sub("\(|\)", "", value).split(",")
+            converted_value = (int(temp[0]), int(temp[1]))
+        # Boolean
+        elif value == "True" or value == "False":
+            converted_value = value == "True"
+        # String
+        else:
+            converted_value = value
+
+    return converted_value
+
+
 def read_conf(conf_file):
     """ Read configuration file as dict
 
@@ -184,24 +219,7 @@ def read_conf(conf_file):
     for line in conf:
         if "=" in line:
             contents = line.split(" = ")
-            try:
-                # Ints
-                if "num" in contents[0] or "size" in contents[0]:
-                    conf_dict[contents[0]] = int(contents[1])
-                # Floats
-                else:
-                    conf_dict[contents[0]] = float(contents[1])
-            except ValueError:
-                # Tuple
-                if re.match("\(\d*,\d*\)", contents[1]):
-                    temp = re.sub("\(|\)", "", contents[1]).split(",")
-                    conf_dict[contents[0]] = (int(temp[0]), int(temp[1]))
-                # Boolean
-                elif contents[1] == "True" or contents[1] == "False":
-                    conf_dict[contents[0]] = contents[1] == "True"
-                # String
-                else:
-                    conf_dict[contents[0]] = contents[1]
+            conf_dict[contents[0]] = convert_string(contents[0], contents[1])
 
     # Calculate number of features
     conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
