@@ -11,14 +11,9 @@ from pathlib import Path
 import logging
 
 # Evaluation
-from confusion_matrix import plot_confusion_matrix
-from confusion_matrix import plot_phoneme_confusion_matrix
-from confusion_matrix import plot_moa_confusion_matrix
+from performance_metrics import get_performance_metrics
 
 # Labels
-from phone_mapping import get_phone_list
-from phone_mapping import get_phoneme_list
-from phone_mapping import get_moa_list
 from phone_mapping import get_label_encoder
 
 def predict(model, le, conf_dict, file_list, scale_file):
@@ -128,21 +123,9 @@ def test(conf_file, model_idx, test_set, feat_type):
     # Accuracy
     summary['y_true'] = np.concatenate(summary['y_true'])
     summary['y_pred'] = np.concatenate(summary['y_pred'])
-    accuracy = float(np.sum(summary['y_true'] == summary['y_pred'])) / len(summary['y_true'])
 
-    # Get label encoder
-    le = get_label_encoder(conf_dict["label_type"])
-
-    # Plot confusion matrix
-    if conf_dict["label_type"] == "phone":
-        plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_phone_list(), decode_dir)
-        plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, "phoneme", decode_dir)
-        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
-    elif conf_dict["label_type"] == "phoneme":
-        plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
-        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
-    elif conf_dict["label_type"] == "moa":
-        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
+    # Get performance metrics
+    get_performance_metrics(summary, conf_dict, decode_dir)
 
 
 if __name__ == '__main__':

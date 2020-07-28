@@ -1,11 +1,13 @@
 # confusionMatrix.py
 # Author: Kevin Chu
-# Last Modified: 05/11/2020
+# Last Modified: 07/28/2020
 
 import matplotlib.pyplot as plt
 import numpy as np
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
+from phone_mapping import get_label_encoder
+from phone_mapping import get_phone_list
 from phone_mapping import get_phoneme_list
 from phone_mapping import get_moa_list
 from sklearn.metrics import confusion_matrix
@@ -135,21 +137,16 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 		f.write("Correct: " + str(correct) + "\n")
 		f.write("Total: " + str(total) + "\n")
 
-	# Calculate normalized confusion matrix
-	cm = confusion_matrix(y_true, y_pred)
+	# Calculate confusion matrix in terms of absolute counts
+	y_true = le.inverse_transform(y_true)
+	y_pred = le.inverse_transform(y_pred)
+	cm = confusion_matrix(y_true, y_pred, sort_order)
 
-	# Labels
-	labels_int = np.arange(0, len(np.unique(y_true)), 1)
-	labels_str = le.inverse_transform(np.unique(y_true))
-
-	# Sort
-	sorted_cm = sort_classes(cm, labels_str, sort_order)
-
-	# Save to file
+	# Save confusion matrix to txt file
 	write_confmat(cm, sort_order, decode_dir, label_type)
 
-	# Convert to proportions
-	sorted_cm = sorted_cm.astype('float') / np.tile(np.reshape(np.sum(sorted_cm, axis=1), (len(sorted_cm), 1)), (1, len(sorted_cm)))
+	# Convert confusion matrix from absolute counts to proportions
+	sorted_cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
 
 	# Plot confusion matrix as a heat map
 	plt.figure(figsize=(10, 10))
@@ -157,6 +154,7 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 	plt.title("Percent Correct = {}%".format(round(accuracy*100, 1)))
 	plt.xlabel("Predicted Class")
 	plt.ylabel("True Class")
+	labels_int = np.arange(0, len(sort_order), 1)
 	plt.xticks(labels_int, sort_order, rotation=90)
 	plt.yticks(labels_int, sort_order)
 	plt.colorbar()
@@ -165,3 +163,33 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 	# Save figure
 	fig_file = decode_dir + "/" + label_type + "_confmat.png"
 	plt.savefig(fig_file, bbox_inches='tight')
+
+
+def get_performance_metrics(summary, conf_dict, decode_dir):
+	"""
+
+	Args:
+		summary (dict): dictionary containing file name, true class
+        predicted class, and probability of predicted class
+		conf_dict (dict): configuration parameters
+		decode_dir (str): directory in which to save decoding results
+
+	Returns:
+		none
+
+	"""
+
+	# Get label encoder
+	le = get_label_encoder(conf_dict["label_type"])
+
+	# Plot confusion matrix
+	if conf_dict["label_type"] == "phone":
+		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_phone_list(),
+							  decode_dir)
+		plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, "phoneme", decode_dir)
+		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
+	elif conf_dict["label_type"] == "phoneme":
+		plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
+		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
+	elif conf_dict["label_type"] == "moa":
+		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
