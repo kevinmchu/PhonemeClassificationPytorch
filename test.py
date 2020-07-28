@@ -7,6 +7,8 @@ import numpy as np
 from train import read_conf
 import os
 from validation import read_feat_list
+from pathlib import Path
+import logging
 
 # Evaluation
 from confusion_matrix import plot_confusion_matrix
@@ -34,6 +36,7 @@ def predict(model, le, conf_dict, file_list, scale_file):
         predicted class, and probability of predicted class
 
     """
+    logging.info("Testing model")
 
     # Track file name, true class, predicted class, and prob of predicted class
     summary = {"file": [], "y_true": [], "y_pred": [], "y_prob": []}
@@ -51,6 +54,8 @@ def predict(model, le, conf_dict, file_list, scale_file):
 
     with torch.no_grad():
         for i in tqdm(range(len(file_list))):
+            logging.info("Testing file {}".format(file_list[i]))
+
             # Extract features and labels for current file
             x_batch, y_batch = read_feat_file(file_list[i], conf_dict)
 
@@ -104,6 +109,13 @@ def test(conf_file, model_idx, test_set, feat_type):
                              "model" + str(model_idx))
     model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
 
+    # Directory in which to save decoding results
+    decode_dir = os.path.join(model_dir, "decode", test_set)
+    Path(decode_dir).mkdir(parents=True)
+
+    # Configure log file
+    logging.basicConfig(filename=decode_dir+"/log", filemode="w", level=logging.INFO)
+
     # Read in list of feature files
     test_list = read_feat_list(test_feat_list)
 
@@ -112,25 +124,29 @@ def test(conf_file, model_idx, test_set, feat_type):
 
     # Get predictions
     summary = predict(model, get_label_encoder(conf_dict["label_type"]), conf_dict, test_list, scale_file)
-    summary['y_true'] = np.concatenate(summary['y_true'])
-    summary['y_pred'] = np.concatenate(summary['y_pred'])
 
     # Accuracy
+    summary['y_true'] = np.concatenate(summary['y_true'])
+    summary['y_pred'] = np.concatenate(summary['y_pred'])
     accuracy = float(np.sum(summary['y_true'] == summary['y_pred'])) / len(summary['y_true'])
-    print("Accuracy: ", round(accuracy, 3))
 
-    # Plot phone confusion matrix
-    le_phone = get_label_encoder(conf_dict["label_type"])
-    #plot_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone, get_phone_list())
-    plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
-    #plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le_phone)
+    # Get label encoder
+    le = get_label_encoder(conf_dict["label_type"])
+
+    # Plot confusion matrix
+    if conf_dict["label_type"] == "phone":
+        plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_phone_list(), decode_dir)
+    elif conf_dict["label_type"] == "phoneme":
+        plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
+    elif conf_dict["label_type"] == "moa":
+        plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
 
 
 if __name__ == '__main__':
     # Inputs
     conf_file = "conf/LSTM_rev_mspec.txt"
-    model_idx = 2
-    test_set = "dev_rev"
+    model_idx = 0
+    test_set = "train_rev"
     feat_type = "mspec"
 
     test(conf_file, model_idx, test_set, feat_type)

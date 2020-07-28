@@ -41,7 +41,7 @@ def sort_classes(cm, classes, sorted_classes):
 	return sorted_cm
 
 
-def plot_phoneme_confusion_matrix(y_true, y_pred, le):
+def plot_phoneme_confusion_matrix(y_true, y_pred, le, label_type, decode_dir):
 	""" Plots phoneme confusion matrix
 
 	Args:
@@ -58,10 +58,10 @@ def plot_phoneme_confusion_matrix(y_true, y_pred, le):
 	le_phoneme = preprocessing.LabelEncoder()
 	phoneme_true = le_phoneme.fit_transform(phoneme_true)
 	phoneme_pred = le_phoneme.transform(phoneme_pred)
-	plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, get_phoneme_list())
+	plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, label_type, get_phoneme_list(), decode_dir)
 
 
-def plot_moa_confusion_matrix(y_true, y_pred, le):
+def plot_moa_confusion_matrix(y_true, y_pred, le, label_type, decode_dir):
 	""" Plots manner of articulation confusion matrix
 
 	Args:
@@ -78,10 +78,10 @@ def plot_moa_confusion_matrix(y_true, y_pred, le):
 	le_moa = preprocessing.LabelEncoder()
 	moa_true = le_moa.fit_transform(moa_true)
 	moa_pred = le_moa.transform(moa_pred)
-	plot_confusion_matrix(moa_true, moa_pred, le_moa, get_moa_list())
+	plot_confusion_matrix(moa_true, moa_pred, le_moa, label_type, get_moa_list(), decode_dir)
 
 
-def plot_confusion_matrix(y_true, y_pred, le, sort_order):
+def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir):
 	""" Plots confusion matrix
 
 	Args:
@@ -96,6 +96,8 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	"""
 	# Calculate accuracy
 	accuracy = float(np.sum(y_true == y_pred))/len(y_true)
+	with open(decode_dir+"/"+label_type+"_accuracy.txt", 'w') as f:
+		f.write(str(accuracy))
 
 	# Calculate normalized confusion matrix
 	cm = confusion_matrix(y_true, y_pred)
@@ -117,5 +119,7 @@ def plot_confusion_matrix(y_true, y_pred, le, sort_order):
 	plt.yticks(labels_int, sort_order)
 	plt.colorbar()
 	plt.clim(0, 1)
-	plt.show()
-	#plt.savefig("fig.png", bbox_inches='tight')
+
+	# Save figure
+	fig_file = decode_dir + "/" + label_type + "_confmat.png"
+	plt.savefig(fig_file, bbox_inches='tight')
