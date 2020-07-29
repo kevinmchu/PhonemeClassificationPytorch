@@ -75,7 +75,14 @@ def tune_hyperparameters(conf_file, hyperparams_file):
     le = get_label_encoder(conf_dict["label_type"])
 
     for i in range(num_combos):
-        print(i)
+        # Configure logging
+        print("Hyperparameter set: {}".format(i+1))
+        logging.basicConfig(filename=hyperparams_file.replace(".txt", "_best.log"), filemode="w", level=logging.INFO)
+        msg = "Hyperparameter set: " + str(i+1) + ", "
+        for key in hyperparams_dict.keys():
+            msg += (str(key) + " = " + str(hyperparams_dict[key][i]) + ", ")
+
+        logging.info(msg)
 
         # Replace conf_dict with current values of hyperparameters
         for key in hyperparams_dict.keys():
@@ -99,7 +106,6 @@ def tune_hyperparameters(conf_file, hyperparams_file):
         scaler = fit_normalizer(train_list, conf_dict)
 
         # Training
-        logging.info("Training")
         max_acc = 0
         acc = []
 
@@ -120,6 +126,7 @@ def tune_hyperparameters(conf_file, hyperparams_file):
 
         # Save the accuracy of the best model for current set of hyperparameters
         hyperparams_acc[i] = max_acc
+        logging.info("Accuracy = " + str(round(max_acc, 3)))
 
     # Set of hyperparameters that gives the highest accuracy on the validation set
     best_idx = np.argmax(hyperparams_acc)
@@ -132,8 +139,8 @@ def tune_hyperparameters(conf_file, hyperparams_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mspec.txt"
-    hyperparams_file = "hyperparams/CNN_hyperparams.txt"
+    conf_file = "conf/CNN_rev_mspec.txt"
+    hyperparams_file = "hyperparams/CNN_rev_mspec_hyperparams.txt"
 
     # Train and validate
     tune_hyperparameters(conf_file, hyperparams_file)
