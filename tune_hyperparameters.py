@@ -121,12 +121,13 @@ def tune_hyperparameters(conf_file, hyperparams_file):
         # Save the accuracy of the best model for current set of hyperparameters
         hyperparams_acc[i] = max_acc
 
-    # # Set of hyperparameters that gives the highest accuracy on the validation set
-    # best_idx = np.argmax(hyperparams_acc)
-    # best_hyperparams = {}
-    # best_hyperparams["num_feature_maps"] = hyperparams_dict["num_feature_maps"][best_idx]
-    # best_hyperparams["max_pooling"] = hyperparams_dict["max_pooling"][best_idx]
-    # best_hyperparams["num_hidden"] = hyperparams_dict["num_hidden"][best_idx]
+    # Set of hyperparameters that gives the highest accuracy on the validation set
+    best_idx = np.argmax(hyperparams_acc)
+
+    best_hyperparams_file = hyperparams_file.replace(".txt", "_best.txt")
+    with open(best_hyperparams_file, 'w') as f:
+        for key in hyperparams_dict.keys():
+            f.write(str(key) + " = " + str(hyperparams_dict[key][best_idx]) + "\n")
 
 
 if __name__ == '__main__':
