@@ -22,9 +22,39 @@ from train import get_device
 from train import train
 from train import validate
 from train import read_conf
+from train import convert_string
 
 
-def tune_hyperparameters(conf_file):
+def read_hyperparams(hyperparams_file):
+    """ Read in hyperparams file as a dictionary
+
+    Args:
+        hyperparams_file (str): name of hyperparameter file
+
+    Returns:
+        hyperparams_dict (dict): hyperparameter file expressed as dict
+
+    """
+
+    with open(hyperparams_file, "r") as f:
+        x = f.readlines()
+
+    x = list(map(lambda a: a.replace('\n', ''), x))
+    x = list(map(lambda a: a.split('\t'), x))
+
+    # Convert list of hyperparameters to dict
+    hyperparams_dict = {}
+    for key in x[0]:
+        hyperparams_dict[key] = []
+
+    for i in range(1, len(x)):
+        for j in range(len(x[0])):
+            hyperparams_dict[x[0][j]].append(convert_string(x[0][j], x[i][j]))
+
+    return hyperparams_dict
+
+
+def tune_hyperparameters(conf_file, hyperparams_file):
     """ Train and evaluate a phoneme classification model
 
     Args:
@@ -33,26 +63,30 @@ def tune_hyperparameters(conf_file):
     """
     # Read in conf file
     conf_dict = read_conf(conf_file)
-    #conf_dict["num_hidden"] = 90
+
+    # Read in hyperparams file
+    hyperparams_dict = read_hyperparams(hyperparams_file)
+
+    # Track accuracy of each combo of hyperparameters
+    num_combos = len(hyperparams_dict[list(hyperparams_dict.keys())[0]])
+    hyperparams_acc = np.zeros((num_combos,))
 
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
 
-    # Random search over hyperparameters
-    hyperparams = {}
-    num_combos = 1
-    # hyperparams["num_feature_maps"] = [20, 20, 20, 30, 20, 30, 40, 20, 30, 40, 50]
-    # hyperparams["max_pooling"] = [(4, 1), (5, 1), (6, 1), (6, 1), (7, 1), (7, 1), (7, 1), (8, 1), (8, 1), (8, 1), (8, 1)]
-    # hyperparams["num_hidden"] = [67, 85, 98, 67, 116, 80, 61, 143, 98, 75, 61]
-    hyperparams["acc"] = np.zeros((num_combos,))
-
     for i in range(num_combos):
-        print(i)
+        # Configure logging
+        print("Hyperparameter set: {}".format(i+1))
+        logging.basicConfig(filename=hyperparams_file.replace(".txt", "_best.log"), filemode="w", level=logging.INFO)
+        msg = "Hyperparameter set: " + str(i+1) + ", "
+        for key in hyperparams_dict.keys():
+            msg += (str(key) + " = " + str(hyperparams_dict[key][i]) + ", ")
 
-        # # Set current values of hyperparameters
-        # conf_dict["num_feature_maps"] = hyperparams["num_feature_maps"][i]
-        # conf_dict["max_pooling"] = hyperparams["max_pooling"][i]
-        # conf_dict["num_hidden"] = hyperparams["num_hidden"][i]
+        logging.info(msg)
+
+        # Replace conf_dict with current values of hyperparameters
+        for key in hyperparams_dict.keys():
+            conf_dict[key] = hyperparams_dict[key][i]
 
         # Initialize network
         model = initialize_network(conf_dict)
@@ -72,7 +106,6 @@ def tune_hyperparameters(conf_file):
         scaler = fit_normalizer(train_list, conf_dict)
 
         # Training
-        logging.info("Training")
         max_acc = 0
         acc = []
 
@@ -92,21 +125,22 @@ def tune_hyperparameters(conf_file):
                     break
 
         # Save the accuracy of the best model for current set of hyperparameters
-        hyperparams["acc"][i] = max_acc
+        hyperparams_acc[i] = max_acc
+        logging.info("Accuracy = " + str(round(max_acc, 3)))
 
-    # # Set of hyperparameters that gives the highest accuracy on the validation set
-    # best_idx = np.argmax(hyperparams["acc"])
-    # best_hyperparams = {}
-    # best_hyperparams["num_feature_maps"] = hyperparams["num_feature_maps"][best_idx]
-    # best_hyperparams["max_pooling"] = hyperparams["max_pooling"][best_idx]
-    # best_hyperparams["num_hidden"] = hyperparams["num_hidden"][best_idx]
-    #
-    # print(best_hyperparams)
+    # Set of hyperparameters that gives the highest accuracy on the validation set
+    best_idx = np.argmax(hyperparams_acc)
+
+    best_hyperparams_file = hyperparams_file.replace(".txt", "_best.txt")
+    with open(best_hyperparams_file, 'w') as f:
+        for key in hyperparams_dict.keys():
+            f.write(str(key) + " = " + str(hyperparams_dict[key][best_idx]) + "\n")
 
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_anechoic_mspec.txt"
+    conf_file = "conf/CNN_rev_mspec.txt"
+    hyperparams_file = "hyperparams/CNN_rev_mspec_hyperparams.txt"
 
     # Train and validate
-    tune_hyperparameters(conf_file)
+    tune_hyperparameters(conf_file, hyperparams_file)

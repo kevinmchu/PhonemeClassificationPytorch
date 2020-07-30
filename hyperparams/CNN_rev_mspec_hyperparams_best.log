@@ -1,0 +1,50 @@
+INFO:root:Hyperparameter set: 1, kernel_size = (3, 3), max_pooling = (4, 1), num_hidden = 67, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.422
+INFO:root:Hyperparameter set: 2, kernel_size = (3, 3), max_pooling = (5, 1), num_hidden = 85, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.415
+INFO:root:Hyperparameter set: 3, kernel_size = (3, 3), max_pooling = (6, 1), num_hidden = 98, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.414
+INFO:root:Hyperparameter set: 4, kernel_size = (3, 3), max_pooling = (6, 1), num_hidden = 67, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.401
+INFO:root:Hyperparameter set: 5, kernel_size = (3, 3), max_pooling = (7, 1), num_hidden = 116, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.409
+INFO:root:Hyperparameter set: 6, kernel_size = (3, 3), max_pooling = (7, 1), num_hidden = 80, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.402
+INFO:root:Hyperparameter set: 7, kernel_size = (3, 3), max_pooling = (7, 1), num_hidden = 61, num_feature_maps = 40, 
+INFO:root:Accuracy = 0.396
+INFO:root:Hyperparameter set: 8, kernel_size = (3, 3), max_pooling = (8, 1), num_hidden = 143, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.399
+INFO:root:Hyperparameter set: 9, kernel_size = (3, 3), max_pooling = (8, 1), num_hidden = 98, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.393
+INFO:root:Hyperparameter set: 10, kernel_size = (3, 3), max_pooling = (8, 1), num_hidden = 75, num_feature_maps = 40, 
+INFO:root:Accuracy = 0.389
+INFO:root:Hyperparameter set: 11, kernel_size = (3, 3), max_pooling = (8, 1), num_hidden = 61, num_feature_maps = 50, 
+INFO:root:Accuracy = 0.387
+INFO:root:Hyperparameter set: 12, kernel_size = (5, 5), max_pooling = (4, 1), num_hidden = 88, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.429
+INFO:root:Hyperparameter set: 13, kernel_size = (5, 5), max_pooling = (5, 1), num_hidden = 111, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.434
+INFO:root:Hyperparameter set: 14, kernel_size = (5, 5), max_pooling = (5, 1), num_hidden = 76, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.435
+INFO:root:Hyperparameter set: 15, kernel_size = (5, 5), max_pooling = (6, 1), num_hidden = 128, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.427
+INFO:root:Hyperparameter set: 16, kernel_size = (5, 5), max_pooling = (6, 1), num_hidden = 87, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.428
+INFO:root:Hyperparameter set: 17, kernel_size = (5, 5), max_pooling = (6, 1), num_hidden = 66, num_feature_maps = 40, 
+INFO:root:Accuracy = 0.421
+INFO:root:Hyperparameter set: 18, kernel_size = (5, 5), max_pooling = (7, 1), num_hidden = 151, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.428
+INFO:root:Hyperparameter set: 19, kernel_size = (5, 5), max_pooling = (7, 1), num_hidden = 104, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.43
+INFO:root:Hyperparameter set: 20, kernel_size = (5, 5), max_pooling = (7, 1), num_hidden = 79, num_feature_maps = 40, 
+INFO:root:Accuracy = 0.422
+INFO:root:Hyperparameter set: 21, kernel_size = (5, 5), max_pooling = (7, 1), num_hidden = 64, num_feature_maps = 50, 
+INFO:root:Accuracy = 0.415
+INFO:root:Hyperparameter set: 22, kernel_size = (5, 5), max_pooling = (8, 1), num_hidden = 184, num_feature_maps = 20, 
+INFO:root:Accuracy = 0.414
+INFO:root:Hyperparameter set: 23, kernel_size = (5, 5), max_pooling = (8, 1), num_hidden = 128, num_feature_maps = 30, 
+INFO:root:Accuracy = 0.417
+INFO:root:Hyperparameter set: 24, kernel_size = (5, 5), max_pooling = (8, 1), num_hidden = 97, num_feature_maps = 40, 
+INFO:root:Accuracy = 0.415
+INFO:root:Hyperparameter set: 25, kernel_size = (5, 5), max_pooling = (8, 1), num_hidden = 79, num_feature_maps = 50, 
+INFO:root:Accuracy = 0.399
