@@ -1,0 +1,4 @@
+kernel_size = (5, 5)
+max_pooling = (5, 1)
+num_hidden = 76
+num_feature_maps = 30
