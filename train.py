@@ -319,7 +319,7 @@ def train_and_validate(conf_file, num_models):
 if __name__ == '__main__':
     # User inputs
     conf_file = "conf/CNN_rev_mspec.txt"
-    num_models = 3
+    num_models = 2
 
     # Train and validate model
     train_and_validate(conf_file, num_models)
