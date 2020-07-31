@@ -1,10 +1,6 @@
 [Architecture]
-model_type = CNN
-num_feature_maps = 30
-window_size = 10
-kernel_size = (5,5)
-max_pooling = (5,1)
-num_hidden = 76
+model_type = MLP
+num_hidden = 218
 num_classes = 61
 
 [Training]
@@ -23,3 +19,4 @@ num_coeffs = 40
 use_energy = False
 deltas = False
 deltaDeltas = False
+window_size = 10

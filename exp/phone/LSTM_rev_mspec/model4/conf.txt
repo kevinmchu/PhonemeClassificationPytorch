@@ -11,8 +11,8 @@ momentum = 0.9
 label_type = phone
 
 [Datasets]
-training = data/train_anechoic/mspec.txt
-development = data/dev_anechoic/mspec.txt
+training = data/train_rev/mspec.txt
+development = data/dev_rev/mspec.txt
 
 [Features]
 feature_type = mspec
