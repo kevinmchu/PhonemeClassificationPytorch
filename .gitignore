@@ -1,5 +1,6 @@
 data
 exp
+statistics
 .idea
 .ipynb_checkpoints
 __pycache__
