@@ -264,7 +264,9 @@ def initialize_network(conf_dict):
 
     """
     # Instantiate the network
-    if conf_dict["model_type"] == "MLP":
+    if conf_dict["model_type"] == "SR":
+        model = SoftmaxRegression(conf_dict)
+    elif conf_dict["model_type"] == "MLP":
         model = MLP(conf_dict)
     elif conf_dict["model_type"] == "CNN":
         model = CNN(conf_dict)
