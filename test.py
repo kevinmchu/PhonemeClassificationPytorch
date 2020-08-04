@@ -100,7 +100,7 @@ def test(conf_file, model_idx, test_set, feat_type):
     test_feat_list = "data/" + test_set + "/" + feat_type + ".txt"
 
     # Load trained model
-    model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
+    model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
                              "model" + str(model_idx))
     model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
 
@@ -130,7 +130,7 @@ def test(conf_file, model_idx, test_set, feat_type):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/SR_rev_mspec.txt"
+    conf_file = "conf/moa/LSTM_rev_mspec.txt"
     model_idx = 4
     test_set = "test_stairway_0_1_3_90"
     feat_type = "mspec"
