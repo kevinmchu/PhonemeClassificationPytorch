@@ -318,7 +318,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa/CNN_rev_mspec.txt"
+    conf_file = "conf/moa/MLP_rev_mspec.txt"
     num_models = 5
 
     # Train and validate model
