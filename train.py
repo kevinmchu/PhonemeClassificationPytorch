@@ -247,15 +247,15 @@ def train_and_validate(conf_file, num_models):
 
     for i in range(num_models):
         # Model directory - create new folder for each new instance of a model
-        model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""), "model" + str(i))
+        model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""), "model" + str(i))
         while os.path.exists(model_dir):
             i += 1
-            model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[1]).replace(".txt", ""),
+            model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
                                      "model" + str(i))
         Path(model_dir).mkdir(parents=True)
 
         # Copy config file
-        copyfile(conf_file, (conf_file.replace("conf/", model_dir + "/")).replace(conf_file.split("/")[1], "conf.txt"))
+        copyfile(conf_file, (conf_file.replace("conf/"+conf_dict["label_type"]+"/", model_dir + "/")).replace(conf_file.split("/")[2], "conf.txt"))
 
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
@@ -318,8 +318,8 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/MLP_rev_mspec.txt"
-    num_models = 2
+    conf_file = "conf/moa/SR_rev_mspec.txt"
+    num_models = 5
 
     # Train and validate model
     train_and_validate(conf_file, num_models)

@@ -1,10 +1,43 @@
 # net.py
 # Author: Kevin Chu
-# Last Modified: 07/23/2020
+# Last Modified: 08/03/2020
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+class SoftmaxRegression(nn.Module):
+
+    def __init__(self, conf_dict):
+        super(SoftmaxRegression, self).__init__()
+
+        self.num_features = conf_dict["num_features"]
+        self.window_size = conf_dict["window_size"]
+        self.fc = nn.Linear(self.num_features*self.window_size, conf_dict["num_classes"])
+
+    def forward(self, x):
+        x = self.splice(x)
+        x = self.fc(x)
+
+        return F.log_softmax(x, dim=1)
+
+    def splice(self, x):
+        # Add zero padding in time
+        x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
+        if torch.cuda.is_available():
+            x0 = x0.cuda()
+        x = torch.cat((x0, x), dim=0)
+
+        # Splice
+        batch_sz = x.size()[0] - self.window_size + 1
+        idx = torch.linspace(0, self.window_size-1, self.window_size)
+        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
+        idx = idx.to(int)
+        x = x[idx, :]
+        x = x.view(x.size()[0], self.window_size*self.num_features)
+
+        return x
 
 
 class MLP(nn.Module):
@@ -231,7 +264,9 @@ def initialize_network(conf_dict):
 
     """
     # Instantiate the network
-    if conf_dict["model_type"] == "MLP":
+    if conf_dict["model_type"] == "SR":
+        model = SoftmaxRegression(conf_dict)
+    elif conf_dict["model_type"] == "MLP":
         model = MLP(conf_dict)
     elif conf_dict["model_type"] == "CNN":
         model = CNN(conf_dict)

@@ -192,4 +192,5 @@ def get_performance_metrics(summary, conf_dict, decode_dir):
 		plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
 		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir)
 	elif conf_dict["label_type"] == "moa":
-		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir)
+		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_moa_list(),
+							  decode_dir)

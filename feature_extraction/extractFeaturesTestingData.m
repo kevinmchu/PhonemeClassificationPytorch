@@ -22,7 +22,8 @@ use_energy = false;
 
 % Acoustic conditions
 % conditions = {'anechoic'};
-conditions = {'stairway/air_binaural_stairway_0_1_3_90.mat'};
+% conditions = {'stairway/air_binaural_stairway_1_1_3_90.mat'};
+conditions = {'office/air_binaural_office_1_1_3.mat'};
 proportions = {1};
 
 %% TESTING DATA
