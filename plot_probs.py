@@ -37,34 +37,32 @@ def plot_outputs(y_prob, y_true, y_pred, le):
         y_prob_max[frame] = y_prob[frame, y_pred[frame]]
 
     phone_trans_idx = np.concatenate((np.array([0]), np.where(np.diff(y_true))[0] + 1, np.array([len(y_true)-1])))
-    text_label_idx = (phone_trans_idx[0:-1] + np.round(np.diff(phone_trans_idx)/3)).astype(int)
+    text_label_idx = (phone_trans_idx[0:-1] + np.round(np.diff(phone_trans_idx)/2)).astype(int)
     phone_trans_idx2 = np.concatenate((np.array([0]), np.where(np.diff(y_pred))[0] + 1, np.array([len(y_pred)-1])))
-    text_label_idx2 = (phone_trans_idx2[0:-1] + np.round(np.diff(phone_trans_idx2)/3)).astype(int)
+    text_label_idx2 = (phone_trans_idx2[0:-1] + np.round(np.diff(phone_trans_idx2)/2)).astype(int)
 
     # Plot
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    ax1.plot(y_prob_correct, 'b', label='truth')
-    ax1.set_title("Artificial intelligence is ...")
-    ax1.set_ylim([0, 1])
-    ax1.set_ylabel("Probability")
-    ax1.legend()
-    ax1.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-    for i, xc in enumerate(phone_trans_idx):
-        ax1.text(xc, -0.1, "|", color='blue')
+    fig, ax = plt.subplots(figsize=(8,3))
+    plt.subplots_adjust(bottom=0.2)
+    ax.plot(y_prob_correct, 'b', label='truth')
+    ax.set_title("Artificial", fontsize=14)
+    ax.set_ylim([0, 1])
+    ax.set_ylabel("Probability", fontsize=14)
+    ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    for i, xc in enumerate(phone_trans_idx[phone_trans_idx<68]):
+        ax.text(xc, -0.05, "|", color='blue')
         if i < len(phone_trans_idx) - 1:
-            ax1.text(text_label_idx[i], -0.2, abbreviate_moa(le.inverse_transform(y_true[text_label_idx])[i]), color='blue')
+            ax.text(text_label_idx[i], -0.13, abbreviate_moa(le.inverse_transform(y_true[text_label_idx])[i]), color='blue')
 
-    ax2.plot(y_prob_max, 'r--', label='prediction')
-    ax2.set_ylim([0, 1])
-    ax2.set_ylabel("Probability")
-    ax2.legend()
-    ax2.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-    for i, xc in enumerate(phone_trans_idx2):
-        ax2.text(xc, -0.1, "|", color='red')
+    ax.plot(y_prob_max, 'r--', label='prediction')
+    ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    for i, xc in enumerate(phone_trans_idx2[phone_trans_idx2<68]):
+        ax.text(xc, -0.2, "|", color='red')
         if i < len(phone_trans_idx2) - 1:
-            ax2.text(text_label_idx2[i], -0.2, abbreviate_moa(le.inverse_transform(y_pred[text_label_idx2])[i]), color='red')
+            ax.text(text_label_idx2[i], -0.28, abbreviate_moa(le.inverse_transform(y_pred[text_label_idx2])[i]), color='red')
 
-    plt.xlim([0, 138])
+    plt.xlim([0, 68])
+    ax.legend(loc='lower left')
 
     plt.show()
 
@@ -125,6 +123,8 @@ def abbreviate_moa(label):
         curr_abbrev = "svw"
     elif label == 'vowel':
         curr_abbrev = 'vwl'
+    else:
+        curr_abbrev = label
 
     return curr_abbrev
 
