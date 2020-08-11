@@ -139,7 +139,7 @@ def tune_hyperparameters(conf_file, hyperparams_file):
 
 if __name__ == '__main__':
     # Necessary files
-    conf_file = "conf/CNN_rev_mspec.txt"
+    conf_file = "conf/phone/CNN_rev_mspec.txt"
     hyperparams_file = "hyperparams/CNN_rev_mspec_hyperparams.txt"
 
     # Train and validate
