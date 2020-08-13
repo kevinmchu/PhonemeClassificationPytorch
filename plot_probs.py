@@ -41,27 +41,30 @@ def plot_outputs(y_prob, y_true, y_pred, le):
     phone_trans_idx2 = np.concatenate((np.array([0]), np.where(np.diff(y_pred))[0] + 1, np.array([len(y_pred)-1])))
     text_label_idx2 = (phone_trans_idx2[0:-1] + np.round(np.diff(phone_trans_idx2)/2)).astype(int)
 
+    upper = 73 # number of time steps to plot
+    accuracy = np.round(100 * np.sum(y_true[0:upper+1] == y_pred[0:upper+1])/(upper+1), 1)
+
     # Plot
     fig, ax = plt.subplots(figsize=(8,3))
     plt.subplots_adjust(bottom=0.2)
     ax.plot(y_prob_correct, 'b', label='truth')
-    ax.set_title("Artificial", fontsize=14)
+    ax.set_title("In wage... (Framewise Accuracy = " + str(accuracy) + "%)", fontsize=14)
     ax.set_ylim([0, 1])
     ax.set_ylabel("Probability", fontsize=14)
     ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-    for i, xc in enumerate(phone_trans_idx[phone_trans_idx<68]):
+    for i, xc in enumerate(phone_trans_idx[phone_trans_idx < upper]):
         ax.text(xc, -0.05, "|", color='blue')
         if i < len(phone_trans_idx) - 1:
             ax.text(text_label_idx[i], -0.13, abbreviate_moa(le.inverse_transform(y_true[text_label_idx])[i]), color='blue')
 
     ax.plot(y_prob_max, 'r--', label='prediction')
     ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-    for i, xc in enumerate(phone_trans_idx2[phone_trans_idx2<68]):
+    for i, xc in enumerate(phone_trans_idx2[phone_trans_idx2 < upper]):
         ax.text(xc, -0.2, "|", color='red')
         if i < len(phone_trans_idx2) - 1:
             ax.text(text_label_idx2[i], -0.28, abbreviate_moa(le.inverse_transform(y_pred[text_label_idx2])[i]), color='red')
 
-    plt.xlim([0, 68])
+    plt.xlim([0, upper])
     ax.legend(loc='lower left')
 
     plt.show()
@@ -112,17 +115,17 @@ def abbreviate_moa(label):
     if label == 'silence':
         curr_abbrev = 'sil'
     elif label == 'stop':
-        curr_abbrev = 'stp'
+        curr_abbrev = 'st'
     elif label == 'affricate':
-        curr_abbrev = 'aff'
+        curr_abbrev = 'af'
     elif label == 'fricative':
-        curr_abbrev = 'frc'
+        curr_abbrev = 'f'
     elif label == 'nasal':
-        curr_abbrev = 'nsl'
+        curr_abbrev = 'n'
     elif label == 'semivowel':
-        curr_abbrev = "svw"
+        curr_abbrev = "sv"
     elif label == 'vowel':
-        curr_abbrev = 'vwl'
+        curr_abbrev = 'v'
     else:
         curr_abbrev = label
 
@@ -139,14 +142,14 @@ if __name__ == '__main__':
     summary = test(conf_file, model_idx, test_set, feat_type)
 
     le_phone = get_label_encoder("phone")
-    le_phoneme = get_label_encoder("moa")
+    le_phoneme = get_label_encoder("phoneme")
     phone_list = le_phone.classes_
-    phoneme_list = phone_to_moa(phone_list)
+    phoneme_list = phone_to_phoneme(phone_list, 39)
     phoneme_list = np.array(phoneme_list)
 
-    y_true = summary["y_true"][3]
-    y_pred = summary["y_pred"][3]
-    y_prob_phone = summary["y_prob"][3]
+    y_true = summary["y_true"][0]
+    y_pred = summary["y_pred"][0]
+    y_prob_phone = summary["y_prob"][0]
     y_prob_phoneme = np.zeros((np.shape(y_prob_phone)[0], len(le_phoneme.classes_)))
 
     for i, phoneme in enumerate(le_phoneme.classes_):
@@ -154,8 +157,8 @@ if __name__ == '__main__':
         idx = np.reshape(idx, (np.shape(idx)[0]*np.shape(idx)[1]))
         y_prob_phoneme[:, le_phoneme.transform([phoneme])[0]] = np.sum(y_prob_phone[:, idx], axis=1)
 
-    y_true = phone_to_moa(le_phone.inverse_transform(y_true))
-    y_pred = phone_to_moa(le_phone.inverse_transform(y_pred))
+    y_true = phone_to_phoneme(le_phone.inverse_transform(y_true), 39)
+    y_pred = phone_to_phoneme(le_phone.inverse_transform(y_pred), 39)
     y_true = le_phoneme.transform(y_true)
     y_pred = le_phoneme.transform(y_pred)
 
