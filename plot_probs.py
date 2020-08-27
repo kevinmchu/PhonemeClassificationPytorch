@@ -41,14 +41,14 @@ def plot_outputs(y_prob, y_true, y_pred, le):
     phone_trans_idx2 = np.concatenate((np.array([0]), np.where(np.diff(y_pred))[0] + 1, np.array([len(y_pred)-1])))
     text_label_idx2 = (phone_trans_idx2[0:-1] + np.round(np.diff(phone_trans_idx2)/2)).astype(int)
 
-    upper = 73 # number of time steps to plot
+    upper = len(y_pred) # number of time steps to plot
     accuracy = np.round(100 * np.sum(y_true[0:upper+1] == y_pred[0:upper+1])/(upper+1), 1)
 
     # Plot
     fig, ax = plt.subplots(figsize=(8,3))
     plt.subplots_adjust(bottom=0.2)
     ax.plot(y_prob_correct, 'b', label='truth')
-    ax.set_title("In wage... (Framewise Accuracy = " + str(accuracy) + "%)", fontsize=14)
+    ax.set_title("asa (Framewise Accuracy = " + str(accuracy) + "%)", fontsize=14)
     ax.set_ylim([0, 1])
     ax.set_ylabel("Probability", fontsize=14)
     ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
@@ -132,6 +132,18 @@ def abbreviate_moa(label):
     return curr_abbrev
 
 
+def write_probs_to_txt(y_true, y_pred, y_prob_phoneme):
+
+    with open('filename.txt', 'w') as f:
+        for i in range(len(y_true)):
+            f.write(y_true[i] + '\t' + y_pred[i])
+            for j in range(np.size(y_prob_phoneme, axis=1)):
+                f.write('\t' + str(y_prob_phoneme[i,j]))
+            f.write('\n')
+
+    return
+
+
 if __name__ == '__main__':
     # Inputs
     conf_file = "conf/phone/LSTM_rev_mspec.txt"
@@ -159,8 +171,11 @@ if __name__ == '__main__':
 
     y_true = phone_to_phoneme(le_phone.inverse_transform(y_true), 39)
     y_pred = phone_to_phoneme(le_phone.inverse_transform(y_pred), 39)
-    y_true = le_phoneme.transform(y_true)
-    y_pred = le_phoneme.transform(y_pred)
 
-    plot_outputs(y_prob_phoneme, y_true, y_pred, le_phoneme)
+    write_probs_to_txt(y_true, y_pred, y_prob_phoneme)
+
+    #y_true = le_phoneme.transform(y_true)
+    #y_pred = le_phoneme.transform(y_pred)
+
+    #plot_outputs(y_prob_phoneme, y_true, y_pred, le_phoneme)
     #plot_outputs(y_prob_phoneme, y_pred, le_phoneme)
