@@ -7,6 +7,8 @@
 
 clear; close all; clc;
 
+addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/DNN_toolbox/get_feat/features/rastamat/'));
+
 %% USER-DEFINED INPUTS
 % Necessary directories
 timit_dir = '/media/batcave/personal/chu.kevin/Sentences/TIMIT_norm';

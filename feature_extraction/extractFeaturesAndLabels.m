@@ -178,6 +178,8 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
         case 'mspec'
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
             x = log(x');
+        case 'rastaplp'
+            x = rastaPlp(wav,fs,round(frame_len*fs),round(frame_shift*fs),num_coeffs);
         otherwise
             error('Invalid feature type.\n');
     end
