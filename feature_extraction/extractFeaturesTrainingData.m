@@ -16,12 +16,12 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'mfcc';
+feat_type = 'rastaplp';
 fs = 16000; % Hz
 frame_len = 0.025; % s
 frame_shift = 0.010; % s
-num_coeffs = 12;
-use_energy = true;
+num_coeffs = 40;
+use_energy = false;
 
 % Acoustic conditions
 % conditions = {'anechoic'};
@@ -65,14 +65,16 @@ for i = 1:numel(conditions)
     end
 end
 conditions = struct('condition', conditions, 'proportion', num2cell(proportions));
-% 
-% % Create data files
-% generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% 
-% % Create feature info files and feature directories
-% generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
+% Create data files
+generateWavInfo(timit_dir, 'train', conditions);
+generateWavInfo(timit_dir, 'dev', conditions);
+%generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+%generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
+% Create feature info files and feature directories
+generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
