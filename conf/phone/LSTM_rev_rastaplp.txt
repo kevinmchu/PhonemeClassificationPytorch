@@ -1,7 +1,7 @@
 [Architecture]
 model_type = LSTM
 bidirectional = False
-num_hidden = 133
+num_hidden = 145
 num_classes = 61
 
 [Training]
@@ -16,7 +16,7 @@ development = data/dev_rev/rastaplp.txt
 
 [Features]
 feature_type = rastaplp
-num_coeffs = 40
+num_coeffs = 13
 use_energy = False
 deltas = False
 deltaDeltas = False
