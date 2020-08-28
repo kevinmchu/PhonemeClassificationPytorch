@@ -178,6 +178,9 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
         case 'mspec'
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
             x = log(x');
+        case 'plp'
+            [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs,0);
+            x = x';
         case 'rastaplp'
             [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs);
             x = x';

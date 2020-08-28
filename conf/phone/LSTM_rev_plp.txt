@@ -1,0 +1,22 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_hidden = 145
+num_classes = 61
+
+[Training]
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phone
+
+[Datasets]
+training = data/train_rev/plp.txt
+development = data/dev_rev/plp.txt
+
+[Features]
+feature_type = plp
+num_coeffs = 13
+use_energy = False
+deltas = False
+deltaDeltas = False

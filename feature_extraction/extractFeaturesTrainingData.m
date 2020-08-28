@@ -16,7 +16,7 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'rastaplp';
+feat_type = 'plp';
 fs = 16000; % Hz
 frame_len = 0.025; % s
 frame_shift = 0.010; % s
