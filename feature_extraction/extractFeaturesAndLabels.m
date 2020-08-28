@@ -169,17 +169,28 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
     % Calculate either mel-frequency cepstral coefficients (mfcc) or log
     % mel spectrogram (mspec)
     switch feat_type
+%         case 'mfcc'
+%             if use_energy
+%                 x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs);
+%             else
+%                 x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore');
+%             end
         case 'mfcc'
+            x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',40);
+            x = log(x');
+            x = dct(x,[],2);
+            x = x(:, 2:num_coeffs+1);
+            
             if use_energy
-                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs);
-            else
-                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore');
+                y = audio.internal.buffer(wav,frame_len*fs,frame_shift*fs);
+                logenergy = (log(sum(y.^2,1)))';
+                x = [logenergy, x]; % prepend
             end
         case 'mspec'
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
             x = log(x');
         case 'plp'
-            [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs,0);
+            [~,x,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs,0);
             x = x';
         case 'rastaplp'
             [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs);

@@ -16,12 +16,12 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'plp';
+feat_type = 'mfcc';
 fs = 16000; % Hz
 frame_len = 0.025; % s
 frame_shift = 0.010; % s
-num_coeffs = 40;
-use_energy = false;
+num_coeffs = 12;
+use_energy = true;
 
 % Acoustic conditions
 % conditions = {'anechoic'};
