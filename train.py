@@ -61,6 +61,10 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     # Shuffle
     random.shuffle(file_list)
 
+    # Select random subset of training data
+    if 'train_subset' in conf_dict.keys():
+        file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
+
     # Get device
     device = get_device()
 

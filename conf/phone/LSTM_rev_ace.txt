@@ -5,6 +5,7 @@ num_hidden = 140
 num_classes = 61
 
 [Training]
+train_subset = 0.2
 num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
