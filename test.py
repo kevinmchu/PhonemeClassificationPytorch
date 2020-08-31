@@ -130,9 +130,9 @@ def test(conf_file, model_idx, test_set, feat_type):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phone/LSTM_rev_mfcc.txt"
-    model_idx = 1
+    conf_file = "conf/phone/LSTM_rev_ace.txt"
+    model_idx = 0
     test_set = "test_stairway_1_1_3_90"
-    feat_type = "mfcc"
+    feat_type = "ace"
 
     test(conf_file, model_idx, test_set, feat_type)
