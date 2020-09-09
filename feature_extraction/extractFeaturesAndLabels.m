@@ -23,7 +23,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     % Returns:
     %   none
     
-    rng('shuffle');
+    rng(0);
     
     % Condition
     if isequal(extractfield(conditions, 'condition'), {'anechoic'})
@@ -179,6 +179,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             p = ACE_map;
             [pPreMax,~] = Split_process(p, 'Gain_proc');
             x = Process(pPreMax, wav);
+            x = x.^2;
             x = log(x);
             
             % Remove windows with padded zeroes for consistency with other
