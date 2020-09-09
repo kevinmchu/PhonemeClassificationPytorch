@@ -131,7 +131,7 @@ def test(conf_file, model_idx, test_set, feat_type):
 if __name__ == '__main__':
     # Inputs
     conf_file = "conf/phone/LSTM_rev_ace.txt"
-    model_idx = 0
+    model_idx = 4
     test_set = "test_stairway_1_1_3_90"
     feat_type = "ace"
 

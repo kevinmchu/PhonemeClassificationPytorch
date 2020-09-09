@@ -198,7 +198,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
                 logenergy = (log(sum(y.^2,1)))';
                 x = [logenergy, x]; % prepend
             end
-        case 'mspec'
+        case {'mspec', 'mspec_ci'}
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
             x = log(x');
         case 'plp'
