@@ -188,6 +188,19 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             
             x = x';
             
+        case 'fftspec_ci'
+            p = ACE_map;
+            [pFft,~] = Split_process(p, 'FFT_filterbank_proc');
+            x = Process(pFft, wav);
+            x = x.*conj(x);
+            x = log(x);
+            
+            % Remove windows with padded zeroes for consistency with other
+            % feature
+            x = x(:, 4:end);
+            
+            x = x';
+            
         case 'mfcc'
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',40);
             x = log(x');

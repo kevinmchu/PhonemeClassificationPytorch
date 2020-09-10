@@ -322,8 +322,8 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_rev_ace.txt"
-    num_models = 4
+    conf_file = "conf/phone/LSTM_rev_fftspec_ci.txt"
+    num_models = 5
 
     # Train and validate model
     train_and_validate(conf_file, num_models)
