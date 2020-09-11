@@ -188,11 +188,18 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             
             x = x';
             
-        case 'fftspec_ci'
+        case {'fftspec_ci', 'mspec_ci'}
             p = ACE_map;
             [pFft,~] = Split_process(p, 'FFT_filterbank_proc');
             x = Process(pFft, wav);
             x = x.*conj(x);
+            
+            % Apply alternative filterbank, if requested
+            if strcmp(feat_type, 'mspec_ci')
+                mfb = designAuditoryFilterBank(fs, 'FrequencyScale', 'mel', 'FFTLength', round(frame_len*fs), 'NumBands', num_coeffs);
+                x = mfb*x;
+            end
+            
             x = log(x);
             
             % Remove windows with padded zeroes for consistency with other
@@ -212,7 +219,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
                 logenergy = (log(sum(y.^2,1)))';
                 x = [logenergy, x]; % prepend
             end
-        case {'mspec', 'mspec_ci'}
+        case 'mspec'
             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
             x = log(x');
         case 'plp'

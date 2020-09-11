@@ -24,7 +24,7 @@ feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorc
 % num_coeffs = 12;
 % use_energy = true;
 
-feat_type = 'fftspec_ci';
+feat_type = 'mspec_ci';
 fs = 16000; % Hz
 frame_len = 0.008; % s
 frame_shift = 0.002; % s
