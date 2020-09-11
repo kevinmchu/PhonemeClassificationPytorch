@@ -7,7 +7,7 @@
 
 clear; close all; clc;
 
-addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/DNN_toolbox/get_feat/features/rastamat/'));
+%addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/DNN_toolbox/get_feat/features/rastamat/'));
 addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/nucleusToolbox/'));
 
 %% USER-DEFINED INPUTS

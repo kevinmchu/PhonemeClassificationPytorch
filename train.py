@@ -288,7 +288,7 @@ def train_and_validate(conf_file, num_models):
         # Training curves
         training_curves = model_dir + "/training_curves"
         with open(training_curves, "w") as file_obj:
-            file_obj.write("Epoch,Training Accuracy,Training Loss,Validation Accuracy,Validation Loss\n")
+            file_obj.write("Epoch,Validation Accuracy,Validation Loss\n")
 
         # Training
         logging.info("Training")
@@ -300,13 +300,11 @@ def train_and_validate(conf_file, num_models):
                 logging.info("Epoch: {}".format(epoch+1))
 
                 train(model, optimizer, le, conf_dict, train_list, scaler)
-                train_metrics = validate(model, le, conf_dict, train_list, scaler)
                 valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
                 acc.append(valid_metrics["acc"])
 
-                file_obj.write("{},{},{},{},{}\n".
-                                format(epoch+1, round(train_metrics['acc'], 3), round(train_metrics['loss'], 3),
-                                        round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
+                file_obj.write("{},{},{}\n".
+                                format(epoch+1, round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
