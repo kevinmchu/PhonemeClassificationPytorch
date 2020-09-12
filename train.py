@@ -321,7 +321,7 @@ def train_and_validate(conf_file, num_models):
 if __name__ == '__main__':
     # User inputs
     conf_file = "conf/phone/LSTM_rev_mspec.txt"
-    num_models = 5
+    num_models = 2
 
     # Train and validate model
     train_and_validate(conf_file, num_models)

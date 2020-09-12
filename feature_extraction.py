@@ -47,6 +47,7 @@ def read_feat_file(filename, conf_dict):
     
     # Read in features and labels as a string
     file_obj = open(filename, "r")
+
     x = file_obj.readlines()
     file_obj.close()
     
