@@ -208,28 +208,51 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             
             x = x';
             
-        case 'mfcc'
-            x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',40);
-            x = log(x');
-            x = dct(x,[],2);
-            x = x(:, 2:num_coeffs+1);
-            
-            if use_energy
-                y = audio.internal.buffer(wav,frame_len*fs,frame_shift*fs);
-                logenergy = (log(sum(y.^2,1)))';
-                x = [logenergy, x]; % prepend
-            end
         case 'mspec'
-            x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
-            x = log(x');
-        case 'plp'
-            [~,x,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs,0);
+            % Buffer and window
+            x = buffer(wav, round(frame_len*fs), round((frame_len-frame_shift)*fs));
+            window = hann(round(frame_len*fs));
+            x = repmat(window, 1, size(x,2)).*x;
+            
+            % Power spectrum
+            x = fft(x);
+            nbands = size(x,1)/2 + 1;
+            x(nbands+1:end, :) = [];
+            x = x.*conj(x);
+            
+            % Apply mel filterbank
+            mfb = designAuditoryFilterBank(fs, 'FrequencyScale', 'mel', 'FFTLength', round(frame_len*fs), 'NumBands', num_coeffs);
+            x = mfb*x;
+            
+            x = log(x);
+            
+            % Remove windows with padded zeroes for consistency with other
+            % features
+            x = x(:, 4:end);
             x = x';
-        case 'rastaplp'
-            [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs);
-            x = x';
-        otherwise
-            error('Invalid feature type.\n');
+            
+%         case 'mfcc'
+%             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',40);
+%             x = log(x');
+%             x = dct(x,[],2);
+%             x = x(:, 2:num_coeffs+1);
+%             
+%             if use_energy
+%                 y = audio.internal.buffer(wav,frame_len*fs,frame_shift*fs);
+%                 logenergy = (log(sum(y.^2,1)))';
+%                 x = [logenergy, x]; % prepend
+%             end
+%         case 'mspec'
+%             x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
+%             x = log(x');
+%         case 'plp'
+%             [~,x,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs,0);
+%             x = x';
+%         case 'rastaplp'
+%             [x,~,~,~,~,~] = rastaPlp(wav,fs,frame_len,frame_shift,num_coeffs);
+%             x = x';
+%         otherwise
+%             error('Invalid feature type.\n');
     end
     
 end
