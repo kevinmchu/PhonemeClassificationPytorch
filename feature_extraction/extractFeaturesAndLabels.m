@@ -211,7 +211,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             x = log(x');
             
         case 'mfcc'
-            x = melFcc(wav, fs, frame_len, frame_shift, 40, num_coeffs);
+            x = melFcc(wav, fs, frame_len, frame_shift, 40, num_coeffs, use_energy);
             x = x';
             
         otherwise

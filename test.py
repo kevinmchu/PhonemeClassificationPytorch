@@ -129,23 +129,23 @@ def test(conf_file, model_idx, test_set, feat_type):
 
 
 if __name__ == '__main__':
-    # Inputs
-    conf_file = "conf/phone/LSTM_rev_mspec.txt"
-    model_idx = 0
-    test_set = "test_stairway_1_1_3_90"
-    feat_type = "mspec"
-
-    test(conf_file, model_idx, test_set, feat_type)
-
-    # conf_dir = "conf/phone"
-    # model_dir = "LSTM_rev"
-    # conf_files = ["conf/phone/LSTM_rev_mspec_ci.txt", "conf/phone/LSTM_rev_mspec.txt"]
-    # model_idxs = [0, 1, 2, 3, 4]
-    # test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-    # feat_types = ["mspec_ci", "mspec"]
+    # # Inputs
+    # conf_file = "conf/phone/LSTM_rev_mspec.txt"
+    # model_idx = 0
+    # test_set = "test_stairway_1_1_3_90"
+    # feat_type = "mspec"
     #
-    # for feat_type in feat_types:
-    #     conf_file = conf_dir + "/" + model_dir + "_" + feat_type + ".txt"
-    #     for model_idx in model_idxs:
-    #         for test_set in test_sets:
-    #             test(conf_file, model_idx, test_set, feat_type)
+    # test(conf_file, model_idx, test_set, feat_type)
+
+    conf_dir = "conf/phone"
+    model_dir = "LSTM_rev"
+    conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
+    model_idxs = [0, 1, 2, 3, 4]
+    test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
+    feat_types = ["mspec"]
+
+    for feat_type in feat_types:
+        conf_file = conf_dir + "/" + model_dir + "_" + feat_type + ".txt"
+        for model_idx in model_idxs:
+            for test_set in test_sets:
+                test(conf_file, model_idx, test_set, feat_type)
