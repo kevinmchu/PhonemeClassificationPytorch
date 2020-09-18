@@ -7,6 +7,9 @@
 
 clear; close all; clc;
 
+%addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/DNN_toolbox/get_feat/features/rastamat/'));
+addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/nucleusToolbox/'));
+
 %% USER-DEFINED INPUTS
 % Necessary directories
 timit_dir = '/media/batcave/personal/chu.kevin/Sentences/TIMIT_norm';
@@ -20,6 +23,13 @@ frame_len = 0.025; % s
 frame_shift = 0.010; % s
 num_coeffs = 12;
 use_energy = true;
+
+% feat_type = 'mspec_ci';
+% fs = 16000; % Hz
+% frame_len = 0.008; % s
+% frame_shift = 0.002; % s
+% num_coeffs = 22;
+% use_energy = false;
 
 % Acoustic conditions
 % conditions = {'anechoic'};
@@ -63,14 +73,16 @@ for i = 1:numel(conditions)
     end
 end
 conditions = struct('condition', conditions, 'proportion', num2cell(proportions));
-% 
-% % Create data files
-% generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% 
-% % Create feature info files and feature directories
-% generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-% generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
+% Create data files
+generateWavInfo(timit_dir, 'train', conditions);
+generateWavInfo(timit_dir, 'dev', conditions);
+%generateWavInfo(timit_dir, 'train', conditions, feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+%generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+
+% Create feature info files and feature directories
+generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');

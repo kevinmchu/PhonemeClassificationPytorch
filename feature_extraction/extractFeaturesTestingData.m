@@ -13,16 +13,23 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'mspec';
+feat_type = 'gspec';
 fs = 16000; % Hz
 frame_len = 0.025; % s
 frame_shift = 0.010; % s
 num_coeffs = 40;
 use_energy = false;
 
+% feat_type = 'ace';
+% fs = 16000; % Hz
+% frame_len = 0.008; % s
+% frame_shift = 0.002; % s
+% num_coeffs = 22;
+% use_energy = false;
+
 % Acoustic conditions
 % conditions = {'anechoic'};
-% conditions = {'stairway/air_binaural_stairway_1_1_3_90.mat'};
+% conditions = {'stairway/air_binaural_stairway_0_1_3_90.mat'};
 conditions = {'office/air_binaural_office_0_1_3.mat'};
 proportions = {1};
 

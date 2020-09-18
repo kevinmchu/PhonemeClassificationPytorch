@@ -23,7 +23,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     % Returns:
     %   none
     
-    rng('shuffle');
+    rng(0);
     
     % Condition
     if isequal(extractfield(conditions, 'condition'), {'anechoic'})
@@ -100,7 +100,7 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     
     % Extract features and labels
     x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-    y = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condition);
+    y = extractLabels(wav, phnFile, fs, size(x,1), frame_len, frame_shift, condition);
     featsAndLabs = [num2cell(x),y];
     featsAndLabs = featsAndLabs';
     
@@ -169,28 +169,65 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
     % Calculate either mel-frequency cepstral coefficients (mfcc) or log
     % mel spectrogram (mspec)
     switch feat_type
-        case 'mfcc'
-            if use_energy
-                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs);
-            else
-                x = mfcc(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumCoeffs',num_coeffs,'LogEnergy','Ignore');
+        case 'ace'
+            p = ACE_map;
+            [pPreMax,~] = Split_process(p, 'Gain_proc');
+            x = Process(pPreMax, wav);
+            x = x.^2;
+            x = log(x);
+            
+            % Remove windows with padded zeroes for consistency with other
+            % features
+            x = x(:, 4:end);
+            
+            x = x';
+            
+        case {'fftspec_ci', 'mspec_ci'}
+            p = ACE_map;
+            [pFft,~] = Split_process(p, 'FFT_filterbank_proc');
+            x = Process(pFft, wav);
+            x = x.*conj(x);
+            
+            % Apply alternative filterbank, if requested
+            if strcmp(feat_type, 'mspec_ci')
+                mfb = designAuditoryFilterBank(fs, 'FrequencyScale', 'mel', 'FFTLength', round(frame_len*fs), 'NumBands', num_coeffs);
+                x = mfb*x;
             end
-        case 'mspec'
-            x = melSpectrogram(wav,fs,'WindowLength',round(frame_len*fs),'OverlapLength',round((frame_len-frame_shift)*fs),'NumBands',num_coeffs);
+            
+            x = log(x);
+            
+            % Remove windows with padded zeroes for consistency with other
+            % feature
+            x = x(:, 4:end);
+            
+            x = x';
+            
+        case 'gspec'
+            x = gammaSpec(wav, fs, frame_len, frame_shift, num_coeffs);
             x = log(x');
+            
+        case 'mspec'
+            x = melSpec(wav, fs, frame_len, frame_shift, num_coeffs);            
+            x = log(x');
+            
+        case 'mfcc'
+            x = melFcc(wav, fs, frame_len, frame_shift, 40, num_coeffs, use_energy);
+            x = x';
+            
         otherwise
             error('Invalid feature type.\n');
     end
     
 end
 
-function labels = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condition)
+function labels = extractLabels(wav, phnFile, fs, n_frames, frame_len, frame_shift, condition)
     % Extracts framewise ground truth labels for a given wav file
     %
     % Args:
     %   -wav (array): audio data
     %   -phnFile (str): file with phone labels
     %   -fs (double): sampling frequency in Hz
+    %   -n_frames (double): number of frames
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which each analysis frame is
     %   shifted in sec
@@ -211,6 +248,9 @@ function labels = extractLabels(wav, phnFile, fs, frame_len, frame_shift, condit
     
     % Convert sample indices into frame indices
     alignments = samples2Frames(alignments, frame_len, frame_shift, fs);
+    
+    % Ensure dimensionality of labels matches that of features
+    alignments{end, 2} = n_frames;
     
     % Format into cell array of labels
     temp = cellfun(@(a,b,c)repmat({c},b-a+1,1),alignments(:,1),alignments(:,2),alignments(:,3),'UniformOutput',false);
@@ -320,9 +360,12 @@ function alignmentsNew = samples2Frames(alignments, frame_len, frame_shift, fs)
     
     alignSamples = cell2mat(alignments(:,1:2));
     alignSamples(:, 2) = floor((alignSamples(:, 2) - frame_len*fs)/(frame_shift*fs)) + 1;
+    %alignSamples(:, 2) = floor((alignSamples(:, 2) - frame_len*fs/2)/(frame_shift*fs));
     alignSamples(2:end, 1) = alignSamples(1:end-1, 2) + 1;
     alignSamples(1,1) = 1;
+    %alignSamples(alignSamples<=0) = 1;
     alignmentsNew = alignments;
     alignmentsNew(:,1:2) = num2cell(alignSamples);
 
 end
+

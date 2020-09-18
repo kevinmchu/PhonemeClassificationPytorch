@@ -45,10 +45,17 @@ def read_feat_file(filename, conf_dict):
         y (list): list of phoneme labels
     """
     
-    # Read in features and labels as a string
-    file_obj = open(filename, "r")
-    x = file_obj.readlines()
-    file_obj.close()
+    # If disconnected, keep trying to read from file
+    io_flag = True
+    while io_flag:
+        try:
+            # Read in features and labels as a string
+            file_obj = open(filename, "r")
+            x = file_obj.readlines()
+            file_obj.close()
+            io_flag = False
+        except:
+            continue
     
     # Extract features and labels
     featsAndLabs = list(map(lambda a: a.split(), x))

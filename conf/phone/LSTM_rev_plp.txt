@@ -11,11 +11,11 @@ momentum = 0.9
 label_type = phone
 
 [Datasets]
-training = data/train_rev/mspec.txt
-development = data/dev_rev/mspec.txt
+training = data/train_rev/plp.txt
+development = data/dev_rev/plp.txt
 
 [Features]
-feature_type = mspec
+feature_type = plp
 num_coeffs = 40
 use_energy = False
 deltas = False
