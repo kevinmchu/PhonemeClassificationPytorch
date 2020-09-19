@@ -15,6 +15,7 @@ from performance_metrics import get_performance_metrics
 
 # Labels
 from phone_mapping import get_label_encoder
+from phone_mapping import phone_to_moa
 
 def predict(model, le, conf_dict, file_list, scale_file):
     """ Test phoneme classification model
@@ -36,6 +37,12 @@ def predict(model, le, conf_dict, file_list, scale_file):
     # Track file name, true class, predicted class, and prob of predicted class
     summary = {"file": [], "y_true": [], "y_pred": [], "y_prob": []}
 
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+
     # Get the device
     device = get_device()
 
@@ -56,6 +63,11 @@ def predict(model, le, conf_dict, file_list, scale_file):
 
             # Normalize features
             x_batch = scaler.transform(x_batch)
+
+            # If hierarchical, add moa feature
+            if "hierarchical" in conf_dict.keys():
+                if conf_dict["hierarchical"]:
+                    blah = 1
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')

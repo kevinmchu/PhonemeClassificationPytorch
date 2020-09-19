@@ -11,6 +11,8 @@ from feature_extraction import read_feat_file
 
 # Labels
 from phone_mapping import get_label_encoder
+from phone_mapping import get_moa_list
+from phone_mapping import phone_to_moa
 
 # Training and testing data
 from validation import read_feat_list
@@ -61,9 +63,15 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     # Shuffle
     random.shuffle(file_list)
 
-    # Select random subset of training data
+    # Select random subset of training data if applicable
     if 'train_subset' in conf_dict.keys():
         file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
+
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
 
     # Get device
     device = get_device()
@@ -82,6 +90,14 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
 
         # Normalize features
         x_batch = scaler.transform(x_batch)
+
+        # If hierarchical, add moa feature
+        if "hierarchical" in conf_dict:
+            if conf_dict["hierarchical"]:
+                y_moa = phone_to_moa(list(y_batch))
+                y_moa = np.reshape(le_moa.transform(y_moa), (len(y_moa), 1))
+                x_moa = (unique_moa == y_moa).astype('float32')
+                x_batch = np.concatenate((x_batch, x_moa), axis=1)
 
         # Encode labels and integers
         y_batch = le.transform(y_batch).astype('long')
@@ -104,7 +120,7 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         optimizer.step()
 
 
-def validate(model, le, conf_dict, file_list, scaler):
+def validate(model, le, conf_dict, file_list, scaler, moa_model):
     """ Validate phoneme classification model
     
     Args:
@@ -113,6 +129,7 @@ def validate(model, le, conf_dict, file_list, scaler):
         conf_dict (dict): configuration parameters
         file_list (list): files in the test set
         scaler (StandardScaler): scales features to zero mean unit variance
+        moa_model (torch.nn.Module): moa model if doing hierarchical classification, otherwise empty list
         
     Returns:
         metrics (dict): loss and accuracy averaged across batches
@@ -129,6 +146,12 @@ def validate(model, le, conf_dict, file_list, scaler):
     # Shuffle
     random.shuffle(file_list)
 
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+
     # Get device
     device = get_device()
 
@@ -142,6 +165,18 @@ def validate(model, le, conf_dict, file_list, scaler):
 
             # Normalize features
             x_batch = scaler.transform(x_batch)
+
+            # If hierarchical, add moa feature
+            if "hierarchical" in conf_dict.keys():
+                if conf_dict["hierarchical"]:
+                    x_batch = (torch.from_numpy(x_batch)).to(device)
+                    moa_outputs = moa_model(x_batch)
+                    y_moa = torch.argmax(moa_outputs, dim=1)
+                    x_batch = np.array(x_batch.to('cpu'))
+                    y_moa = np.array(y_moa.to('cpu'))
+                    y_moa = np.reshape(y_moa, (len(y_moa), 1))
+                    x_moa = (unique_moa == y_moa).astype('float32')
+                    x_batch = np.concatenate((x_batch, x_moa), axis=1)
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
@@ -225,9 +260,10 @@ def read_conf(conf_file):
             contents = line.split(" = ")
             conf_dict[contents[0]] = convert_string(contents[0], contents[1])
 
-    # Calculate number of features
+    # Calculate number of features (assumes hierarchical classification using moa)
     conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
-                                (conf_dict["num_coeffs"] + int(conf_dict["use_energy"]))
+                                (conf_dict["num_coeffs"] + int(conf_dict["use_energy"])) + \
+                                7 * int(conf_dict["hierarchical"])
 
     return conf_dict
 
@@ -257,6 +293,16 @@ def train_and_validate(conf_file, num_models):
             model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
                                      "model" + str(i))
         Path(model_dir).mkdir(parents=True)
+
+        # If hierarchical phone classification, get moa model
+        if "hierarchical" in conf_dict.keys():
+            if conf_dict["hierarchical"]:
+                moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(i))
+                moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
+            else:
+                moa_model = []
+        else:
+            moa_model = []
 
         # Copy config file
         copyfile(conf_file, (conf_file.replace("conf/"+conf_dict["label_type"]+"/", model_dir + "/")).replace(conf_file.split("/")[2], "conf.txt"))
@@ -300,7 +346,7 @@ def train_and_validate(conf_file, num_models):
                 logging.info("Epoch: {}".format(epoch+1))
 
                 train(model, optimizer, le, conf_dict, train_list, scaler)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                valid_metrics = validate(model, le, conf_dict, valid_list, scaler, moa_model)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
@@ -320,7 +366,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_rev_mfcc.txt"
+    conf_file = "conf/phone/LSTM_rev_mspec_hierarchical.txt"
     num_models = 5
 
     # Train and validate model
