@@ -8,6 +8,7 @@ from pathlib import Path
 # Features
 from feature_extraction import fit_normalizer
 from feature_extraction import read_feat_file
+from sklearn import preprocessing
 
 # Labels
 from phone_mapping import get_label_encoder
@@ -16,6 +17,7 @@ from phone_mapping import phone_to_moa
 
 # Training and testing data
 from validation import read_feat_list
+import evaluate
 
 # PyTorch
 import torch
@@ -45,7 +47,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scaler):
+def train(model, optimizer, le, conf_dict, file_list, scaler, moa_model, moa_prob_scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -55,6 +57,7 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         conf_dict (dict): configuration parameters
         file_list (list): files in the test set
         scaler (StandardScaler): scales features to zero mean unit variance
+        moa_model (torch.nn.Module):
         
     Returns:
         none
@@ -91,13 +94,41 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         # Normalize features
         x_batch = scaler.transform(x_batch)
 
-        # If hierarchical, add moa feature
-        if "hierarchical" in conf_dict:
+        # Hard classification using known moa label
+        # if "hierarchical" in conf_dict:
+        #     if conf_dict["hierarchical"]:
+        #         y_moa = phone_to_moa(list(y_batch))
+        #         y_moa = np.reshape(le_moa.transform(y_moa), (len(y_moa), 1))
+        #         x_moa = (unique_moa == y_moa).astype('float32')
+        #         x_batch = np.concatenate((x_batch, x_moa), axis=1)
+
+        # # Hard classification using moa predicted by moa model
+        # if "hierarchical" in conf_dict.keys():
+        #     if conf_dict["hierarchical"]:
+        #         x_batch = (torch.from_numpy(x_batch)).to(device)
+        #         moa_outputs = moa_model(x_batch)
+        #         y_moa = torch.argmax(moa_outputs, dim=1)
+        #         x_batch = np.array(x_batch.to('cpu'))
+        #         y_moa = np.array(y_moa.to('cpu'))
+        #         y_moa = np.reshape(y_moa, (len(y_moa), 1))
+        #         x_moa = (unique_moa == y_moa).astype('float32')
+        #         x_batch = np.concatenate((x_batch, x_moa), axis=1)
+
+        # Soft classification using moa predicted by moa model
+        if "hierarchical" in conf_dict.keys():
             if conf_dict["hierarchical"]:
-                y_moa = phone_to_moa(list(y_batch))
-                y_moa = np.reshape(le_moa.transform(y_moa), (len(y_moa), 1))
-                x_moa = (unique_moa == y_moa).astype('float32')
-                x_batch = np.concatenate((x_batch, x_moa), axis=1)
+                # Get soft classifications
+                x_batch = (torch.from_numpy(x_batch)).to(device)
+                moa_outputs = moa_model(x_batch)
+                moa_outputs = torch.exp(moa_outputs)
+
+                # Normalize probabilities
+                moa_outputs = moa_outputs.to('cpu').detach().numpy()
+                moa_outputs = moa_prob_scaler.transform(moa_outputs)
+
+                # Concatenate with acoustic features
+                x_batch = np.array(x_batch.to('cpu'))
+                x_batch = np.concatenate((x_batch, moa_outputs), axis=1)
 
         # Encode labels and integers
         y_batch = le.transform(y_batch).astype('long')
@@ -120,7 +151,7 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         optimizer.step()
 
 
-def validate(model, le, conf_dict, file_list, scaler, moa_model):
+def validate(model, le, conf_dict, file_list, scaler, moa_model, moa_prob_scaler):
     """ Validate phoneme classification model
     
     Args:
@@ -166,17 +197,33 @@ def validate(model, le, conf_dict, file_list, scaler, moa_model):
             # Normalize features
             x_batch = scaler.transform(x_batch)
 
-            # If hierarchical, add moa feature
+            # # Hard classification using moa predicted by moa model
+            # if "hierarchical" in conf_dict.keys():
+            #     if conf_dict["hierarchical"]:
+            #         x_batch = (torch.from_numpy(x_batch)).to(device)
+            #         moa_outputs = moa_model(x_batch)
+            #         y_moa = torch.argmax(moa_outputs, dim=1)
+            #         x_batch = np.array(x_batch.to('cpu'))
+            #         y_moa = np.array(y_moa.to('cpu'))
+            #         y_moa = np.reshape(y_moa, (len(y_moa), 1))
+            #         x_moa = (unique_moa == y_moa).astype('float32')
+            #         x_batch = np.concatenate((x_batch, x_moa), axis=1)
+
+            # Soft classification using moa predicted by moa model
             if "hierarchical" in conf_dict.keys():
                 if conf_dict["hierarchical"]:
+                    # Get soft classifications
                     x_batch = (torch.from_numpy(x_batch)).to(device)
                     moa_outputs = moa_model(x_batch)
-                    y_moa = torch.argmax(moa_outputs, dim=1)
+                    moa_outputs = torch.exp(moa_outputs)
+
+                    # Normalize probabilities
+                    moa_outputs = moa_outputs.to('cpu').detach().numpy()
+                    moa_outputs = moa_prob_scaler.transform(moa_outputs)
+
+                    # Concatenate with acoustic features
                     x_batch = np.array(x_batch.to('cpu'))
-                    y_moa = np.array(y_moa.to('cpu'))
-                    y_moa = np.reshape(y_moa, (len(y_moa), 1))
-                    x_moa = (unique_moa == y_moa).astype('float32')
-                    x_batch = np.concatenate((x_batch, x_moa), axis=1)
+                    x_batch = np.concatenate((x_batch, moa_outputs), axis=1)
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
@@ -260,10 +307,14 @@ def read_conf(conf_file):
             contents = line.split(" = ")
             conf_dict[contents[0]] = convert_string(contents[0], contents[1])
 
-    # Calculate number of features (assumes hierarchical classification using moa)
-    conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
-                                (conf_dict["num_coeffs"] + int(conf_dict["use_energy"])) + \
-                                7 * int(conf_dict["hierarchical"])
+    if "hierarchical" in conf_dict.keys():
+        # Calculate number of features (assumes hierarchical classification using moa)
+        conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
+                                    (conf_dict["num_coeffs"] + int(conf_dict["use_energy"])) + \
+                                    7 * int(conf_dict["hierarchical"])
+    else:
+        conf_dict["num_features"] = (1 + int(conf_dict["deltas"]) + int(conf_dict["deltaDeltas"])) * \
+                                    (conf_dict["num_coeffs"] + int(conf_dict["use_energy"]))
 
     return conf_dict
 
@@ -294,16 +345,6 @@ def train_and_validate(conf_file, num_models):
                                      "model" + str(i))
         Path(model_dir).mkdir(parents=True)
 
-        # If hierarchical phone classification, get moa model
-        if "hierarchical" in conf_dict.keys():
-            if conf_dict["hierarchical"]:
-                moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(i))
-                moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
-            else:
-                moa_model = []
-        else:
-            moa_model = []
-
         # Copy config file
         copyfile(conf_file, (conf_file.replace("conf/"+conf_dict["label_type"]+"/", model_dir + "/")).replace(conf_file.split("/")[2], "conf.txt"))
 
@@ -331,6 +372,31 @@ def train_and_validate(conf_file, num_models):
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
 
+        # If hierarchical phone classification, get moa model
+        if "hierarchical" in conf_dict.keys():
+            if conf_dict["hierarchical"]:
+                # Load trained moa model
+                moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(i))
+                moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
+
+                # Fit StandardScaler based on posterior probs
+                le_moa = get_label_encoder("moa")
+                moa_conf_dict = read_conf(moa_model_dir + "/conf.txt")
+                moa_scale_file = moa_model_dir + "/scaler.pickle"
+                moa_summary = evaluate.predict(moa_model, le_moa, moa_conf_dict, train_list, moa_scale_file)
+                moa_all_probs = np.concatenate(moa_summary['y_prob'])
+                moa_prob_scaler = preprocessing.StandardScaler()
+                moa_prob_scaler.fit(moa_all_probs)
+
+                # Save StandardScaler
+                scale_file_moa_prob = model_dir + "/scaler_moa_prob.pickle"
+                with open(scale_file_moa_prob, 'wb') as f2:
+                    pickle.dump(moa_prob_scaler, f2)
+            else:
+                moa_model = []
+        else:
+            moa_model = []
+
         # Training curves
         training_curves = model_dir + "/training_curves"
         with open(training_curves, "w") as file_obj:
@@ -345,8 +411,8 @@ def train_and_validate(conf_file, num_models):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scaler)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scaler, moa_model)
+                train(model, optimizer, le, conf_dict, train_list, scaler, moa_model, moa_prob_scaler)
+                valid_metrics = validate(model, le, conf_dict, valid_list, scaler, moa_model, moa_prob_scaler)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
@@ -367,7 +433,7 @@ def train_and_validate(conf_file, num_models):
 if __name__ == '__main__':
     # User inputs
     conf_file = "conf/phone/LSTM_rev_mspec_hierarchical.txt"
-    num_models = 5
+    num_models = 1
 
     # Train and validate model
     train_and_validate(conf_file, num_models)
