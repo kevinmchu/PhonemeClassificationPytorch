@@ -47,7 +47,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scaler):
+def train(experts, optimizers, le, conf_dict, file_list, scaler, moa_model):
     """ Train a phoneme classification model
     
     Args:
@@ -69,46 +69,58 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     if 'train_subset' in conf_dict.keys():
         file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
 
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+
     # Get device
     device = get_device()
 
-    # Set model to training mode
-    model.train()
+    for moa in experts.keys():
+        # Set model to training mode
+        experts[moa].train()
 
-    losses = []
+        for file in file_list:
+            # Clear existing gradients
+            optimizers[moa].zero_grad()
 
-    for file in file_list:
-        # Clear existing gradients
-        optimizer.zero_grad()
+            # Extract features and labels for current file
+            x_batch, y_batch = read_feat_file(file, conf_dict)
 
-        # Extract features and labels for current file
-        x_batch, y_batch = read_feat_file(file, conf_dict)
+            # Normalize features
+            x_batch = scaler.transform(x_batch)
 
-        # Normalize features
-        x_batch = scaler.transform(x_batch)
+            # Convert labels to moa
+            y_moa = phone_to_moa(list(y_batch))
+            y_moa = np.array(y_moa)
+            moa_idx = np.argwhere(y_moa == moa)
+            moa_idx = np.reshape(moa_idx, (len(moa_idx),))
 
-        # Encode labels and integers
-        y_batch = le.transform(y_batch).astype('long')
+            if len(moa_idx) > 0:
+                # Encode labels as integers
+                y_batch = le.transform(y_batch).astype('long')
 
-        # Move to GPU
-        x_batch = (torch.from_numpy(x_batch)).to(device)
-        y_batch = (torch.from_numpy(y_batch)).to(device)
+                # Move to GPU
+                x_batch = (torch.from_numpy(x_batch)).to(device)
+                y_batch = (torch.from_numpy(y_batch)).to(device)
+                moa_idx = (torch.from_numpy(moa_idx)).to(device)
 
-        # Get outputs
-        train_outputs = model(x_batch)
+                # Get outputs
+                train_outputs = experts[moa](x_batch)
 
-        # Calculate loss
-        # Note: NLL loss actually calculates cross entropy loss when given values
-        # transformed by log softmax
-        loss = F.nll_loss(train_outputs, y_batch, reduction='sum')
-        losses.append(loss.to('cpu').detach().numpy())
+                # Calculate loss
+                # Note: NLL loss actually calculates cross entropy loss when given values
+                # transformed by log softmax
+                loss = F.nll_loss(train_outputs[moa_idx, :], y_batch[moa_idx], reduction='sum')
 
-        # Backpropagate and update weights
-        loss.backward()
-        optimizer.step()
+                # Backpropagate and update weights
+                loss.backward()
+                optimizers[moa].step()
 
 
-def validate(model, le, conf_dict, file_list, scaler):
+def validate(experts, le, conf_dict, file_list, scaler, moa_model):
     """ Validate phoneme classification model
     
     Args:
@@ -134,11 +146,19 @@ def validate(model, le, conf_dict, file_list, scaler):
     # Shuffle
     random.shuffle(file_list)
 
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+
     # Get device
     device = get_device()
 
     # Evaluation mode
-    model.eval()
+    moa_model.eval()
+    for moa in experts.keys():
+        experts[moa].eval()
 
     with torch.no_grad():
         for file in file_list:
@@ -155,8 +175,20 @@ def validate(model, le, conf_dict, file_list, scaler):
             x_batch = (torch.from_numpy(x_batch)).to(device)
             y_batch = (torch.from_numpy(y_batch)).to(device)
 
-            # Get outputs and predictions
-            outputs = model(x_batch)
+            # Get moa model outputs
+            moa_outputs = torch.exp(moa_model(x_batch))
+            moa_outputs = torch.reshape(moa_outputs, (len(y_batch), 1, len(le_moa.classes_)))
+
+            # Get outputs from each expert
+            outputs = torch.zeros((len(y_batch), len(le.classes_), len(le_moa.classes_)))
+            outputs = outputs.to(device)
+            for moa in experts.keys():
+                temp = torch.exp(experts[moa](x_batch))
+                outputs[:, :, le_moa.transform([moa])] = torch.reshape(temp, (temp.size()[0], temp.size()[1], 1))
+
+            # Weighted sum of experts
+            outputs = moa_outputs*outputs
+            outputs = torch.log(torch.sum(outputs, 2))
 
             # Update running loss
             running_loss += (F.nll_loss(outputs, y_batch, reduction='sum')).item()
@@ -268,16 +300,18 @@ def train_and_validate(conf_file, num_models):
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
-        # Instantiate the network
-        logging.info("Initializing model")
-        model = initialize_network(conf_dict)
-
-        # Send network to GPU (if applicable)
+        # Instantiate the experts using same architecture
+        logging.info("Initializing experts")
+        experts = {}
+        optimizers = {}
         device = get_device()
-        model.to(device)
+        le_moa = get_label_encoder("moa")
+        for moa in le_moa.classes_:
+            experts[moa] = initialize_network(conf_dict)
+            experts[moa].to(device)
 
-        # Stochastic gradient descent with user-defined learning rate and momentum
-        optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+            # Different SGD optimizer for each expert
+            optimizers[moa] = optim.SGD(experts[moa].parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
 
         # Read in feature files
         train_list = read_feat_list(conf_dict["training"])
@@ -288,6 +322,17 @@ def train_and_validate(conf_file, num_models):
         scaler = fit_normalizer(train_list, conf_dict)
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
+
+        # If hierarchical phone classification, get moa model
+        if "hierarchical" in conf_dict.keys():
+            if conf_dict["hierarchical"]:
+                # Load trained moa model
+                moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(i))
+                moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
+            else:
+                moa_model = []
+        else:
+            moa_model = []
 
         # Training curves
         training_curves = model_dir + "/training_curves"
@@ -303,8 +348,8 @@ def train_and_validate(conf_file, num_models):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scaler)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                train(experts, optimizers, le, conf_dict, train_list, scaler, moa_model)
+                valid_metrics = validate(experts, le, conf_dict, valid_list, scaler, moa_model)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
@@ -313,7 +358,8 @@ def train_and_validate(conf_file, num_models):
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
-                    torch.save(model, model_dir + "/model")
+                    for moa in le_moa.classes_:
+                        torch.save(experts[moa], model_dir + "/model_" + str(moa))
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
