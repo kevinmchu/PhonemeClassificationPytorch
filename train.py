@@ -324,7 +324,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_rev_mspec_hierarchical.txt"
+    conf_file = "conf/moa/LSTM_anechoic_mspec.txt"
     num_models = 1
 
     # Train and validate model

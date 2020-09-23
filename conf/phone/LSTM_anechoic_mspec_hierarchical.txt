@@ -4,6 +4,10 @@ bidirectional = False
 num_hidden = 133
 num_classes = 61
 
+[Hierarchical]
+hierarchical = True
+moa_model_dir = exp/moa/taslp/LSTM_anechoic_mspec
+
 [Training]
 num_epochs = 250
 learning_rate = 1e-5
