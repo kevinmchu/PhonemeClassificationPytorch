@@ -117,7 +117,7 @@ def train(experts, optimizers, le, conf_dict, file_list, scaler, moa_model):
 
                 # Calculate loss
                 # Ignore inputs that do not correspond to current moa
-                loss = F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
+                loss = len(y_batch)/len(moa_idx) * F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
 
                 # Backpropagate and update weights
                 loss.backward()

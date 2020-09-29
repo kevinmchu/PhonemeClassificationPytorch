@@ -17,7 +17,6 @@ from phone_mapping import phone_to_moa
 
 # Training and testing data
 from validation import read_feat_list
-import evaluate
 
 # PyTorch
 import torch
