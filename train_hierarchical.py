@@ -15,6 +15,7 @@ from phone_mapping import get_label_encoder
 from phone_mapping import get_phone_list
 from phone_mapping import get_moa_list
 from phone_mapping import phone_to_moa
+from phone_mapping import phone_to_bpg
 
 # Training and testing data
 from validation import read_feat_list
@@ -48,7 +49,7 @@ def get_device():
     return device
 
 
-def train(experts, optimizers, le, conf_dict, file_list, scaler, moa_model):
+def train(experts, optimizers, le, conf_dict, file_list, scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -70,20 +71,16 @@ def train(experts, optimizers, le, conf_dict, file_list, scaler, moa_model):
     if 'train_subset' in conf_dict.keys():
         file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
 
-    # If hierarchical classification, get label encoder for moa
-    if conf_dict["hierarchical"]:
-        le_moa = get_label_encoder("moa")
-
     # Get device
     device = get_device()
 
-    for moa in experts.keys():
+    for bpg in experts.keys():
         # Set model to training mode
-        experts[moa].train()
+        experts[bpg].train()
 
         for file in file_list:
             # Clear existing gradients
-            optimizers[moa].zero_grad()
+            optimizers[bpg].zero_grad()
 
             # Extract features and labels for current file
             x_batch, y_batch = read_feat_file(file, conf_dict)
@@ -91,40 +88,39 @@ def train(experts, optimizers, le, conf_dict, file_list, scaler, moa_model):
             # Normalize features
             x_batch = scaler.transform(x_batch)
 
-            # # Get moa model outputs
-            # moa_outputs = moa_model(x_batch)
-            # moa_pred = torch.argmax(moa_outputs, dim=1)
-            # moa_pred = le_moa.inverse_transform(moa_pred.cpu().numpy())
+            # Only take indices where phone is correct bpg
+            if conf_dict["bpg"] == "moa":
+                y_bpg = phone_to_moa(list(y_batch))
+            elif conf_dict["bpg"] == "bpg":
+                y_bpg = phone_to_bpg(list(y_batch))
 
-            # Only take indices where phone is correct moa
-            y_moa = phone_to_moa(list(y_batch))
-            y_moa = np.array(y_moa)
-            moa_idx = np.argwhere(y_moa == moa)
-            moa_idx = np.reshape(moa_idx, (len(moa_idx),))
+            y_bpg = np.array(y_bpg)
+            bpg_idx = np.argwhere(y_bpg == bpg)
+            bpg_idx = np.reshape(bpg_idx, (len(bpg_idx),))
 
             y = -np.ones((len(y_batch,))).astype('long')
 
-            if len(moa_idx) > 0:
+            if len(bpg_idx) > 0:
                 # Only take labels where phone is correct moa
-                y[moa_idx] = le[moa].transform(np.array(y_batch)[moa_idx]).astype('long')
+                y[bpg_idx] = le[bpg].transform(np.array(y_batch)[bpg_idx]).astype('long')
 
                 # Move to GPU
                 x_batch = (torch.from_numpy(x_batch)).to(device)
                 y = (torch.from_numpy(y)).to(device)
 
                 # Get outputs
-                train_outputs = experts[moa](x_batch)
+                train_outputs = experts[bpg](x_batch)
 
                 # Calculate loss
                 # Ignore inputs that do not correspond to current moa
-                loss = len(y_batch)/len(moa_idx) * F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
+                loss = len(y_batch)/len(bpg_idx) * F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
 
                 # Backpropagate and update weights
                 loss.backward()
-                optimizers[moa].step()
+                optimizers[bpg].step()
 
 
-def validate(experts, le, conf_dict, file_list, scaler, moa_model):
+def validate(experts, le, conf_dict, file_list, scaler, bpg_model):
     """ Validate phoneme classification model
     
     Args:
@@ -153,17 +149,17 @@ def validate(experts, le, conf_dict, file_list, scaler, moa_model):
     # Get label encoder for phone/phoneme
     le_phone = get_label_encoder(conf_dict["label_type"])
 
-    # If hierarchical classification, get label encoder for moa
+    # If hierarchical classification, get label encoder for bpg
     if conf_dict["hierarchical"]:
-        le_moa = get_label_encoder("moa")
+        le_bpg = get_label_encoder(conf_dict["bpg"])
 
     # Get device
     device = get_device()
 
     # Evaluation mode
-    moa_model.eval()
-    for moa in experts.keys():
-        experts[moa].eval()
+    bpg_model.eval()
+    for bpg in experts.keys():
+        experts[bpg].eval()
 
     with torch.no_grad():
         for file in file_list:
@@ -181,14 +177,14 @@ def validate(experts, le, conf_dict, file_list, scaler, moa_model):
             y_batch = (torch.from_numpy(y_batch)).to(device)
 
             # Get moa model outputs
-            moa_outputs = torch.exp(moa_model(x_batch))
+            bpg_outputs = torch.exp(bpg_model(x_batch))
 
             # Get posterior probabilities from each expert
             posteriors = torch.zeros((len(y_batch), len(le_phone.classes_)))
             posteriors = posteriors.to(device)
-            for moa in experts.keys():
-                outputs = torch.exp(experts[moa](x_batch))
-                posteriors[:, le_phone.transform(le[moa].classes_)] = moa_outputs[:, le_moa.transform([moa])] * outputs
+            for bpg in experts.keys():
+                outputs = torch.exp(experts[bpg](x_batch))
+                posteriors[:, le_phone.transform(le[bpg].classes_)] = bpg_outputs[:, le_bpg.transform([bpg])] * outputs
 
             # Get log probabilities to calculate loss
             posteriors = torch.log(posteriors)
@@ -276,7 +272,7 @@ def train_and_validate(conf_file, num_models):
 
     Args:
         conf_file (str): txt file containing model info
-        num_models (int): number of instances to of model to train
+        num_models (int): number of instances of model to train
 
     Returns
         none
@@ -310,23 +306,28 @@ def train_and_validate(conf_file, num_models):
         num_classes = conf_dict["num_classes"]
 
         phone_list = get_phone_list()
-        phone_list_as_moa = phone_to_moa(phone_list)
-        le_moa = get_label_encoder("moa")
 
-        for moa in le_moa.classes_:
+        if conf_dict["bpg"] == "moa":
+            phone_list_as_bpg = phone_to_moa(phone_list)
+        elif conf_dict["bpg"] == "bpg":
+            phone_list_as_bpg = phone_to_bpg(phone_list)
+
+        le_bpg = get_label_encoder(conf_dict["bpg"])
+
+        for bpg in le_bpg.classes_:
             # Initialize experts
-            idx = np.argwhere(np.array(phone_list_as_moa) == moa)
+            idx = np.argwhere(np.array(phone_list_as_bpg) == bpg)
             idx = np.reshape(idx, (len(idx),))
             conf_dict["num_classes"] = len(idx)
-            experts[moa] = initialize_network(conf_dict)
-            experts[moa].to(device)
+            experts[bpg] = initialize_network(conf_dict)
+            experts[bpg].to(device)
 
             # Get label encoder
-            le[moa] = preprocessing.LabelEncoder()
-            le[moa].fit(list(np.array(phone_list)[idx]))
+            le[bpg] = preprocessing.LabelEncoder()
+            le[bpg].fit(list(np.array(phone_list)[idx]))
 
             # Different SGD optimizer for each expert
-            optimizers[moa] = optim.SGD(experts[moa].parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+            optimizers[bpg] = optim.SGD(experts[bpg].parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
 
         # Reset num_classes
         conf_dict["num_classes"] = num_classes
@@ -341,13 +342,9 @@ def train_and_validate(conf_file, num_models):
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
 
-        # If hierarchical phone classification, get moa model
-        if conf_dict["hierarchical"]:
-            # Load trained moa model
-            moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(i))
-            moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
-        else:
-            moa_model = []
+        # Load trained moa model
+        bpg_model_dir = os.path.join(conf_dict["bpg_model_dir"], "model" + str(i))
+        bpg_model = torch.load(bpg_model_dir + "/model", map_location=torch.device(get_device()))
 
         # Training curves
         training_curves = model_dir + "/training_curves"
@@ -363,8 +360,8 @@ def train_and_validate(conf_file, num_models):
             with open(training_curves, "a") as file_obj:
                 logging.info("Epoch: {}".format(epoch+1))
 
-                train(experts, optimizers, le, conf_dict, train_list, scaler, moa_model)
-                valid_metrics = validate(experts, le, conf_dict, valid_list, scaler, moa_model)
+                train(experts, optimizers, le, conf_dict, train_list, scaler)
+                valid_metrics = validate(experts, le, conf_dict, valid_list, scaler, bpg_model)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
@@ -373,8 +370,8 @@ def train_and_validate(conf_file, num_models):
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
-                    for moa in le_moa.classes_:
-                        torch.save(experts[moa], model_dir + "/model_" + str(moa))
+                    for bpg in le_bpg.classes_:
+                        torch.save(experts[bpg], model_dir + "/model_" + str(bpg))
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
@@ -385,7 +382,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_hierarchical.txt"
+    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_bpg_experts.txt"
     num_models = 1
 
     # Train and validate model

@@ -323,7 +323,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa/LSTM_anechoic_mspec.txt"
+    conf_file = "conf/bpg/LSTM_rev_mspec.txt"
     num_models = 1
 
     # Train and validate model

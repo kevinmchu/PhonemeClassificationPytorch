@@ -2,17 +2,13 @@
 model_type = LSTM
 bidirectional = False
 num_hidden = 133
-num_classes = 61
-
-[Hierarchical]
-hierarchical = True
-moa_model_dir = exp/moa/taslp/LSTM_rev_mspec
+num_classes = 5
 
 [Training]
 num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
-label_type = phone
+label_type = bpg
 
 [Datasets]
 training = data/train_rev/melSpectrogram.txt

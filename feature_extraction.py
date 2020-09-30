@@ -6,6 +6,7 @@ import numpy as np
 from sklearn import preprocessing
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
+from phone_mapping import phone_to_bpg
 
 
 def fit_normalizer(file_list, label_type):
@@ -78,6 +79,10 @@ def read_feat_file(filename, conf_dict):
 
     elif conf_dict["label_type"] == 'moa':
         y = phone_to_moa(y)
+        y = np.array(y, dtype='object')
+
+    elif conf_dict["label_type"] == 'bpg':
+        y = phone_to_bpg(y)
         y = np.array(y, dtype='object')
     
     return X, y

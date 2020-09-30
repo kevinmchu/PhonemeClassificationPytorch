@@ -17,9 +17,10 @@ from performance_metrics import get_performance_metrics
 # Labels
 from phone_mapping import get_label_encoder
 from phone_mapping import phone_to_moa
+from phone_mapping import phone_to_bpg
 from phone_mapping import get_phone_list
 
-def predict(experts, le, conf_dict, file_list, scale_file, moa_model, moa_label):
+def predict(experts, le, conf_dict, file_list, scale_file, bpg_model, bpg_label):
     """ Test phoneme classification model
 
     Args:
@@ -44,8 +45,8 @@ def predict(experts, le, conf_dict, file_list, scale_file, moa_model, moa_label)
 
     # If hierarchical classification, get label encoder for moa
     if conf_dict["hierarchical"]:
-        le_moa = get_label_encoder("moa")
-        unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+        le_bpg = get_label_encoder(conf_dict["bpg"])
+        unique_bpg = np.reshape(le_bpg.transform(le_bpg.classes_), (1, len(le_bpg.classes_)))
 
     # Get scaler
     with open(scale_file, 'rb') as f:
@@ -56,9 +57,9 @@ def predict(experts, le, conf_dict, file_list, scale_file, moa_model, moa_label)
 
     # Evaluation mode
     print("Testing")
-    moa_model.eval()
-    for moa in experts.keys():
-        experts[moa].eval()
+    bpg_model.eval()
+    for bpg in experts.keys():
+        experts[bpg].eval()
 
     with torch.no_grad():
         for i in tqdm(range(len(file_list))):
@@ -73,25 +74,29 @@ def predict(experts, le, conf_dict, file_list, scale_file, moa_model, moa_label)
             # Move to GPU
             x_batch = (torch.from_numpy(x_batch)).to(device)
 
-            if moa_label == "known":
-                y_moa = le_moa.transform(np.array(phone_to_moa(list(y_batch))))
-                y_moa = np.reshape(y_moa, (len(y_moa), 1))
-                moa_outputs = torch.from_numpy((unique_moa == y_moa).astype('float32')).to(device)
+            if bpg_label == "known":
+                if conf_dict["bpg"] == "moa":
+                    y_bpg = le_bpg.transform(np.array(phone_to_moa(list(y_batch))))
+                elif conf_dict["bpg"] == "bpg":
+                    y_bpg = le_bpg.transform(np.array(phone_to_bpg(list(y_batch))))
 
-            elif moa_label == "predicted_soft" or moa_label == "predicted_hard":
-                # Get moa model outputs
-                moa_outputs = torch.exp(moa_model(x_batch))
+                y_bpg = np.reshape(y_bpg, (len(y_bpg), 1))
+                bpg_outputs = torch.from_numpy((unique_bpg == y_bpg).astype('float32')).to(device)
 
-            if moa_label == "predicted_hard":
-                max_probs = torch.max(moa_outputs, dim=1)
-                moa_outputs = (moa_outputs == torch.reshape(max_probs[0], (len(max_probs[0]), 1))).float()
+            elif bpg_label == "predicted_soft" or bpg_label == "predicted_hard":
+                # Get bpg model outputs
+                bpg_outputs = torch.exp(bpg_model(x_batch))
+
+            if bpg_label == "predicted_hard":
+                max_probs = torch.max(bpg_outputs, dim=1)
+                bpg_outputs = (bpg_outputs == torch.reshape(max_probs[0], (len(max_probs[0]), 1))).float()
 
             # Get posterior probabilities from each expert
             y_prob = torch.zeros((len(y_batch), len(le_phone.classes_)))
             y_prob = y_prob.to(device)
-            for moa in experts.keys():
-                outputs = torch.exp(experts[moa](x_batch))
-                y_prob[:, le_phone.transform(le[moa].classes_)] = moa_outputs[:, le_moa.transform([moa])] * outputs
+            for bpg in experts.keys():
+                outputs = torch.exp(experts[bpg](x_batch))
+                y_prob[:, le_phone.transform(le[bpg].classes_)] = bpg_outputs[:, le_bpg.transform([bpg])] * outputs
 
             # Get outputs and predictions
             y_pred = torch.argmax(y_prob, dim=1)
@@ -108,7 +113,7 @@ def predict(experts, le, conf_dict, file_list, scale_file, moa_model, moa_label)
     return summary
 
 
-def test(conf_file, model_idx, test_set, feat_type, moa_label):
+def test(conf_file, model_idx, test_set, feat_type, bpg_label):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
@@ -130,8 +135,8 @@ def test(conf_file, model_idx, test_set, feat_type, moa_label):
     test_feat_list = "data/" + test_set + "/" + feat_type + ".txt"
 
     # Load moa model
-    moa_model_dir = os.path.join(conf_dict["moa_model_dir"], "model" + str(model_idx))
-    moa_model = torch.load(moa_model_dir + "/model", map_location=torch.device(get_device()))
+    bpg_model_dir = os.path.join(conf_dict["bpg_model_dir"], "model" + str(model_idx))
+    bpg_model = torch.load(bpg_model_dir + "/model", map_location=torch.device(get_device()))
 
     # Load moa experts
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
@@ -140,21 +145,26 @@ def test(conf_file, model_idx, test_set, feat_type, moa_label):
     le = {}
 
     phone_list = get_phone_list()
-    phone_list_as_moa = phone_to_moa(phone_list)
-    le_moa = get_label_encoder("moa")
 
-    for moa in le_moa.classes_:
+    if conf_dict["bpg"] == "moa":
+        phone_list_as_bpg = phone_to_moa(phone_list)
+    elif conf_dict["bpg"] == "bpg":
+        phone_list_as_bpg = phone_to_bpg(phone_list)
+
+    le_bpg = get_label_encoder(conf_dict["bpg"])
+
+    for bpg in le_bpg.classes_:
         # Load experts
-        experts[moa] = torch.load(model_dir + "/model_" + moa, map_location=torch.device(get_device()))
+        experts[bpg] = torch.load(model_dir + "/model_" + bpg, map_location=torch.device(get_device()))
 
         # Get label encoder
-        idx = np.argwhere(np.array(phone_list_as_moa) == moa)
+        idx = np.argwhere(np.array(phone_list_as_bpg) == bpg)
         idx = np.reshape(idx, (len(idx),))
-        le[moa] = preprocessing.LabelEncoder()
-        le[moa].fit(list(np.array(phone_list)[idx]))
+        le[bpg] = preprocessing.LabelEncoder()
+        le[bpg].fit(list(np.array(phone_list)[idx]))
 
     # Directory in which to save decoding results
-    decode_dir = os.path.join(model_dir, "decode", moa_label, test_set)
+    decode_dir = os.path.join(model_dir, "decode", bpg_label, test_set)
     Path(decode_dir).mkdir(parents=True)
 
     # Configure log file
@@ -167,7 +177,7 @@ def test(conf_file, model_idx, test_set, feat_type, moa_label):
     scale_file = model_dir + "/scaler.pickle"
 
     # Get predictions
-    summary = predict(experts, le, conf_dict, test_list, scale_file, moa_model, moa_label)
+    summary = predict(experts, le, conf_dict, test_list, scale_file, bpg_model, bpg_label)
 
     # Accuracy
     summary['y_true'] = np.concatenate(summary['y_true'])
@@ -179,10 +189,10 @@ def test(conf_file, model_idx, test_set, feat_type, moa_label):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_hierarchical.txt"
-    model_idx = 1
-    test_set = "test_anechoic"
+    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_bpg_experts.txt"
+    model_idx = 0
+    test_set = "test_stairway_1_1_3_90"
     feat_type = "melSpectrogram"
-    moa_label = "predicted_hard"
+    bpg_label = "predicted_soft"
 
-    test(conf_file, model_idx, test_set, feat_type, moa_label)
+    test(conf_file, model_idx, test_set, feat_type, bpg_label)
