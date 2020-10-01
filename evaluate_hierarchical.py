@@ -165,7 +165,11 @@ def test(conf_file, model_idx, test_set, feat_type, bpg_label):
 
     # Directory in which to save decoding results
     decode_dir = os.path.join(model_dir, "decode", bpg_label, test_set)
-    Path(decode_dir).mkdir(parents=True)
+
+    try:
+        Path(decode_dir).mkdir(parents=True)
+    except FileExistsError:
+        print("File exists: " + decode_dir + ". Overwriting existing files")
 
     # Configure log file
     logging.basicConfig(filename=decode_dir+"/log", filemode="w", level=logging.INFO)
@@ -189,10 +193,10 @@ def test(conf_file, model_idx, test_set, feat_type, bpg_label):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_bpg_experts.txt"
-    model_idx = 0
+    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_moa_experts.txt"
+    model_idx = 1
     test_set = "test_stairway_1_1_3_90"
     feat_type = "melSpectrogram"
-    bpg_label = "predicted_soft"
+    bpg_label = "known"
 
     test(conf_file, model_idx, test_set, feat_type, bpg_label)
