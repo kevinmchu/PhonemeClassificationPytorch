@@ -118,7 +118,11 @@ def test(conf_file, model_idx, test_set, feat_type):
 
     # Directory in which to save decoding results
     decode_dir = os.path.join(model_dir, "decode", test_set)
-    Path(decode_dir).mkdir(parents=True)
+
+    try:
+        Path(decode_dir).mkdir(parents=True)
+    except FileExistsError:
+        print("File exists: " + decode_dir + ". Overwriting existing files")
 
     # Configure log file
     logging.basicConfig(filename=decode_dir+"/log", filemode="w", level=logging.INFO)
@@ -151,10 +155,10 @@ if __name__ == '__main__':
 
     conf_dir = "conf/phone"
     model_dir = "LSTM_rev"
-    conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
+    conf_files = ["conf/phone/LSTM_rev_gspec.txt"]
     model_idxs = [0, 1, 2, 3, 4]
     test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-    feat_types = ["mspec"]
+    feat_types = ["gspec"]
 
     for feat_type in feat_types:
         conf_file = conf_dir + "/" + model_dir + "_" + feat_type + ".txt"

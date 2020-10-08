@@ -143,7 +143,7 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 		f.write("Total: " + str(total) + "\n")
 
 	# Accuracy conditioned on BPG
-	if label_type != "moa":
+	if bpg_type is not None and label_type != "moa":
 		le_bpg = get_label_encoder(bpg_type)
 		if bpg_type == "moa":
 			y_true_bpg = np.array(phone_to_moa(y_true))
@@ -186,6 +186,9 @@ def get_performance_metrics(summary, conf_dict, decode_dir):
 
 	# Get label encoder
 	le = get_label_encoder(conf_dict["label_type"])
+
+	if "hierarchical" not in conf_dict.keys():
+		conf_dict["bpg"] = None
 
 	# Plot confusion matrix
 	if conf_dict["label_type"] == "phone":

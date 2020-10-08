@@ -263,7 +263,39 @@ def initialize_network(conf_dict):
         model (model): initialized model
 
     """
-    # Instantiate the network
+    # Get appropriate model type
+    model = get_model_type(conf_dict)
+
+    # Randomly initialize weights
+    model.apply(initialize_weights)
+
+    return model
+
+
+def initialize_pretrained_network(conf_dict, pretrained_model):
+    """ Create network from coniguration file and use
+    pretrained weights
+
+    Args:
+        conf_dict (dict): conf file represented as a dict
+
+    Returns:
+        model (model): intialized model
+    """
+    # Get appropriate model type
+    model = get_model_type(conf_dict)
+
+    # For LSTM layer, use weights from pretrained model
+    model.lstm = pretrained_model.lstm
+
+    # Randomly initialize fully connected layer
+    model.fc.apply(initialize_weights)
+
+    return model
+
+
+def get_model_type(conf_dict):
+
     if conf_dict["model_type"] == "SR":
         model = SoftmaxRegression(conf_dict)
     elif conf_dict["model_type"] == "MLP":
@@ -277,8 +309,4 @@ def initialize_network(conf_dict):
     elif conf_dict["model_type"] == "GRU":
         model = GRUModel(conf_dict)
 
-    # Initialize weights
-    model.apply(initialize_weights)
-
     return model
-

@@ -29,6 +29,7 @@ import torch.optim as optim
 
 # Models
 from net import initialize_network
+from net import initialize_pretrained_network
 
 from tqdm import tqdm
 import logging
@@ -113,7 +114,7 @@ def train(experts, optimizers, le, conf_dict, file_list, scaler):
 
                 # Calculate loss
                 # Ignore inputs that do not correspond to current moa
-                loss = len(y_batch)/len(bpg_idx) * F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
+                loss = F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
 
                 # Backpropagate and update weights
                 loss.backward()
@@ -296,6 +297,11 @@ def train_and_validate(conf_file, num_models):
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
+        # Load Pretrained model
+        if "pretrained_model_dir" in conf_dict.keys():
+            pretrained_model_dir = os.path.join(conf_dict["pretrained_model_dir"], "model" + str(i))
+            pretrained_model = torch.load(pretrained_model_dir + "/model", map_location=torch.device(get_device()))
+
         # Initializing the experts using same architecture
         logging.info("Initializing experts")
         experts = {}
@@ -319,7 +325,12 @@ def train_and_validate(conf_file, num_models):
             idx = np.argwhere(np.array(phone_list_as_bpg) == bpg)
             idx = np.reshape(idx, (len(idx),))
             conf_dict["num_classes"] = len(idx)
-            experts[bpg] = initialize_network(conf_dict)
+
+            if "pretrained_model_dir" in conf_dict.keys():
+                experts[bpg] = initialize_pretrained_network(conf_dict, pretrained_model)
+            else:
+                experts[bpg] = initialize_network(conf_dict)
+
             experts[bpg].to(device)
 
             # Get label encoder
@@ -382,7 +393,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_bpg_experts.txt"
+    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_moa_experts.txt"
     num_models = 1
 
     # Train and validate model
