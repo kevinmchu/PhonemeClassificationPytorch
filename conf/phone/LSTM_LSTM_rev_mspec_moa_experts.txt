@@ -14,7 +14,6 @@ num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
 label_type = phone
-pretrained_model_dir = exp/phone/taslp/model_comparison/LSTM_rev_mspec_melSpectrogram
 
 [Datasets]
 training = data/train_rev/melSpectrogram.txt

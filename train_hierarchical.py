@@ -4,6 +4,7 @@ import os
 import os.path
 import pickle
 from pathlib import Path
+from datetime import datetime
 
 # Features
 from feature_extraction import fit_normalizer
@@ -79,34 +80,40 @@ def train(experts, optimizers, le, conf_dict, file_list, scaler):
         # Set model to training mode
         experts[bpg].train()
 
-        for file in file_list:
+    for file in file_list:
+        # Extract features and labels for current file
+        x_batch, y_batch = read_feat_file(file, conf_dict)
+
+        # Normalize features
+        x_batch = scaler.transform(x_batch)
+
+        # Convert phone labels to bpg
+        if conf_dict["bpg"] == "moa":
+            y_bpg = phone_to_moa(list(y_batch))
+        elif conf_dict["bpg"] == "bpg":
+            y_bpg = phone_to_bpg(list(y_batch))
+
+        y_bpg = np.array(y_bpg)
+
+        # Move normalized features to GPU
+        x_batch = (torch.from_numpy(x_batch)).to(device)
+
+        for bpg in experts.keys():
             # Clear existing gradients
             optimizers[bpg].zero_grad()
 
-            # Extract features and labels for current file
-            x_batch, y_batch = read_feat_file(file, conf_dict)
-
-            # Normalize features
-            x_batch = scaler.transform(x_batch)
-
-            # Only take indices where phone is correct bpg
-            if conf_dict["bpg"] == "moa":
-                y_bpg = phone_to_moa(list(y_batch))
-            elif conf_dict["bpg"] == "bpg":
-                y_bpg = phone_to_bpg(list(y_batch))
-
-            y_bpg = np.array(y_bpg)
             bpg_idx = np.argwhere(y_bpg == bpg)
             bpg_idx = np.reshape(bpg_idx, (len(bpg_idx),))
 
-            y = -np.ones((len(y_batch,))).astype('long')
-
             if len(bpg_idx) > 0:
-                # Only take labels where phone is correct moa
+                # Initialize y as array of -1
+                # Used to replace irrelevant bpg's with -1
+                y = -np.ones((len(y_batch, ))).astype('long')
+
+                # Replace -1's at indices where phone is correct moa
                 y[bpg_idx] = le[bpg].transform(np.array(y_batch)[bpg_idx]).astype('long')
 
                 # Move to GPU
-                x_batch = (torch.from_numpy(x_batch)).to(device)
                 y = (torch.from_numpy(y)).to(device)
 
                 # Get outputs
@@ -178,29 +185,26 @@ def validate(experts, le, conf_dict, file_list, scaler, bpg_model):
             y_batch = (torch.from_numpy(y_batch)).to(device)
 
             # Get moa model outputs
-            bpg_outputs = torch.exp(bpg_model(x_batch))
+            bpg_outputs = bpg_model(x_batch)
 
             # Get posterior probabilities from each expert
             posteriors = torch.zeros((len(y_batch), len(le_phone.classes_)))
             posteriors = posteriors.to(device)
             for bpg in experts.keys():
-                outputs = torch.exp(experts[bpg](x_batch))
-                posteriors[:, le_phone.transform(le[bpg].classes_)] = bpg_outputs[:, le_bpg.transform([bpg])] * outputs
-
-            # Get log probabilities to calculate loss
-            posteriors = torch.log(posteriors)
+                outputs = experts[bpg](x_batch)
+                posteriors[:, le_phone.transform(le[bpg].classes_)] = bpg_outputs[:, le_bpg.transform([bpg])] + outputs
 
             # Update running loss
-            running_loss += (F.nll_loss(posteriors, y_batch, reduction='sum')).item()
+            running_loss += (F.nll_loss(posteriors, y_batch, reduction='sum'))
 
             # Calculate accuracy
-            matches = y_batch.cpu().numpy() == torch.argmax(posteriors, dim=1).cpu().numpy()
-            running_correct += np.sum(matches)
+            matches = (y_batch == torch.argmax(posteriors, dim=1))
+            running_correct += torch.sum(matches)
             num_frames += len(matches)
 
     # Average loss over all batches
-    metrics['acc'] = running_correct / num_frames
-    metrics['loss'] = running_loss / num_frames
+    metrics['acc'] = running_correct.item() / num_frames
+    metrics['loss'] = running_loss.item() / num_frames
 
     return metrics
 
@@ -297,11 +301,6 @@ def train_and_validate(conf_file, num_models):
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
-        # Load Pretrained model
-        if "pretrained_model_dir" in conf_dict.keys():
-            pretrained_model_dir = os.path.join(conf_dict["pretrained_model_dir"], "model" + str(i))
-            pretrained_model = torch.load(pretrained_model_dir + "/model", map_location=torch.device(get_device()))
-
         # Initializing the experts using same architecture
         logging.info("Initializing experts")
         experts = {}
@@ -325,11 +324,7 @@ def train_and_validate(conf_file, num_models):
             idx = np.argwhere(np.array(phone_list_as_bpg) == bpg)
             idx = np.reshape(idx, (len(idx),))
             conf_dict["num_classes"] = len(idx)
-
-            if "pretrained_model_dir" in conf_dict.keys():
-                experts[bpg] = initialize_pretrained_network(conf_dict, pretrained_model)
-            else:
-                experts[bpg] = initialize_network(conf_dict)
+            experts[bpg] = initialize_network(conf_dict)
 
             experts[bpg].to(device)
 
@@ -369,7 +364,8 @@ def train_and_validate(conf_file, num_models):
 
         for epoch in tqdm(range(conf_dict["num_epochs"])):
             with open(training_curves, "a") as file_obj:
-                logging.info("Epoch: {}".format(epoch+1))
+                current_time = datetime.now().strftime("%m/%d/%y %H:%M:%S")
+                logging.info("Time: {}, Epoch: {}".format(current_time, epoch+1))
 
                 train(experts, optimizers, le, conf_dict, train_list, scaler)
                 valid_metrics = validate(experts, le, conf_dict, valid_list, scaler, bpg_model)
@@ -394,7 +390,7 @@ def train_and_validate(conf_file, num_models):
 if __name__ == '__main__':
     # User inputs
     conf_file = "conf/phone/LSTM_LSTM_rev_mspec_moa_experts.txt"
-    num_models = 1
+    num_models = 4
 
     # Train and validate model
     train_and_validate(conf_file, num_models)

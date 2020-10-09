@@ -194,7 +194,7 @@ def test(conf_file, model_idx, test_set, feat_type, bpg_label):
 if __name__ == '__main__':
     # Inputs
     conf_file = "conf/phone/LSTM_LSTM_rev_mspec_moa_experts.txt"
-    model_idx = 0
+    model_idx = 3
     test_set = "test_stairway_1_1_3_90"
     feat_type = "melSpectrogram"
     bpg_label = "predicted_soft"

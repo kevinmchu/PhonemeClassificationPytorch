@@ -4,6 +4,7 @@ import os
 import os.path
 import pickle
 from pathlib import Path
+from datetime import datetime
 
 # Features
 from feature_extraction import fit_normalizer
@@ -74,8 +75,6 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     # Set model to training mode
     model.train()
 
-    losses = []
-
     for file in file_list:
         # Clear existing gradients
         optimizer.zero_grad()
@@ -100,7 +99,6 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         # Note: NLL loss actually calculates cross entropy loss when given values
         # transformed by log softmax
         loss = F.nll_loss(train_outputs, y_batch, reduction='sum')
-        losses.append(loss.to('cpu').detach().numpy())
 
         # Backpropagate and update weights
         loss.backward()
@@ -300,7 +298,8 @@ def train_and_validate(conf_file, num_models):
 
         for epoch in tqdm(range(conf_dict["num_epochs"])):
             with open(training_curves, "a") as file_obj:
-                logging.info("Epoch: {}".format(epoch+1))
+                current_time = datetime.now().strftime("%m/%d/%y %H:%M:%S")
+                logging.info("Time: {}, Epoch: {}".format(current_time, epoch+1))
 
                 train(model, optimizer, le, conf_dict, train_list, scaler)
                 valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
