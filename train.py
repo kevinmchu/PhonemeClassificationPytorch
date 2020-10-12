@@ -27,6 +27,7 @@ import torch.optim as optim
 
 # Models
 from net import initialize_network
+from net import get_model_type
 
 from tqdm import tqdm
 import logging
@@ -268,6 +269,13 @@ def train_and_validate(conf_file, num_models):
         # Instantiate the network
         logging.info("Initializing model")
         model = initialize_network(conf_dict)
+        
+        if "pretrained_model_dir" in conf_dict.keys():
+            pretrained_model_dir = os.path.join(conf_dict["pretrained_model_dir"], "model" + str(i))
+            pretrained_dict = torch.load(pretrained_model_dir + "/model.pt")
+            for i, param in enumerate(pretrained_dict):
+                if i < len(pretrained_dict.keys())-2:
+                    model.load_state_dict({param: pretrained_dict[param]}, strict=False)
 
         # Send network to GPU (if applicable)
         device = get_device()
@@ -311,7 +319,7 @@ def train_and_validate(conf_file, num_models):
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
-                    torch.save(model, model_dir + "/model")
+                    torch.save(model.state_dict(), model_dir + "/model.pt")
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
@@ -322,7 +330,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/bpg/LSTM_rev_mspec.txt"
+    conf_file = "conf/phone/LSTM_rev_mspec_pretrained.txt"
     num_models = 1
 
     # Train and validate model

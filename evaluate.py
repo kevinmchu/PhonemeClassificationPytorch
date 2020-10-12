@@ -9,6 +9,7 @@ import os
 from validation import read_feat_list
 from pathlib import Path
 import logging
+from net import get_model_type
 
 # Evaluation
 from performance_metrics import get_performance_metrics
@@ -114,7 +115,13 @@ def test(conf_file, model_idx, test_set, feat_type):
     # Load trained model
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
                              "model" + str(model_idx))
-    model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
+
+    model = get_model_type(conf_dict)
+    model.load_state_dict(torch.load(model_dir + "/model.pt"))
+
+    # Move to GPU
+    device = get_device()
+    model.to(device)
 
     # Directory in which to save decoding results
     decode_dir = os.path.join(model_dir, "decode", test_set)
