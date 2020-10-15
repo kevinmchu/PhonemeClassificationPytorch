@@ -1,0 +1,23 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_hidden = 140
+num_classes = 39
+
+[Training]
+train_subset = 0.2
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phoneme
+
+[Datasets]
+training = data/train_rev/ace.txt
+development = data/dev_rev/ace.txt
+
+[Features]
+feature_type = ace
+num_coeffs = 22
+use_energy = False
+deltas = False
+deltaDeltas = False

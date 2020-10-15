@@ -1,0 +1,22 @@
+[Architecture]
+model_type = MLP
+num_hidden = 218
+num_classes = 39
+
+[Training]
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phoneme
+
+[Datasets]
+training = data/train_rev/mspec.txt
+development = data/dev_rev/mspec.txt
+
+[Features]
+feature_type = mspec
+num_coeffs = 40
+use_energy = False
+deltas = False
+deltaDeltas = False
+window_size = 10

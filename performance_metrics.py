@@ -56,8 +56,13 @@ def plot_phoneme_confusion_matrix(y_true, y_pred, le, label_type, decode_dir, bp
 		none
 
 	"""
-	phoneme_true = phone_to_phoneme(le.inverse_transform(y_true), 39)
-	phoneme_pred = phone_to_phoneme(le.inverse_transform(y_pred), 39)
+	if label_type == "phone":
+		phoneme_true = phone_to_phoneme(le.inverse_transform(y_true), 39)
+		phoneme_pred = phone_to_phoneme(le.inverse_transform(y_pred), 39)
+	elif label_type == "phoneme":
+		phoneme_true = le.inverse_transform(y_true)
+		phoneme_pred = le.inverse_transform(y_pred)
+
 	le_phoneme = preprocessing.LabelEncoder()
 	phoneme_true = le_phoneme.fit_transform(phoneme_true)
 	phoneme_pred = le_phoneme.transform(phoneme_pred)
