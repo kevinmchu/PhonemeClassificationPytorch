@@ -2,10 +2,15 @@
 % Author: Kevin Chu
 % Last Modified: 09/14/2020
 
-function x = melSpec(wav, fs, frame_len, frame_shift, num_bands)
+function x = melSpec(wav, fs, frame_len, frame_shift, window_type, num_bands)
     % Buffer and window
     x = buffer(wav, round(frame_len*fs), round((frame_len-frame_shift)*fs), 'nodelay');
-    window = hann(round(frame_len*fs));
+    
+    if strcmp(window_type, 'hann')
+        window = hann(round(frame_len*fs));
+    elseif strcmp(window_type, 'hamming')
+        window = hamming(round(frame_len*fs));
+    end
     x = repmat(window, 1, size(x,2)).*x;
 
     % Power spectrum

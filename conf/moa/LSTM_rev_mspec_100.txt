@@ -1,0 +1,22 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_hidden = 100
+num_classes = 7
+
+[Training]
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = moa
+
+[Datasets]
+training = data/train_rev/melSpectrogram.txt
+development = data/dev_rev/melSpectrogram.txt
+
+[Features]
+feature_type = mspec
+num_coeffs = 40
+use_energy = False
+deltas = False
+deltaDeltas = False

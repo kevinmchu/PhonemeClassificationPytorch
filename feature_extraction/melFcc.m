@@ -2,7 +2,7 @@
 % Author: Kevin Chu
 % Last Modified: 09/14/2020
 
-function coeffs = melFcc(wav, fs, frame_len, frame_shift, num_bands, num_coeffs, use_energy)
+function coeffs = melFcc(wav, fs, frame_len, frame_shift, window_type, num_bands, num_coeffs, use_energy)
     % This function calculates mfcc's
     %
     % Args:
@@ -18,7 +18,7 @@ function coeffs = melFcc(wav, fs, frame_len, frame_shift, num_bands, num_coeffs,
     %   -coeffs (matrix): matrix of mfcc's across time
 
     % Compute mel power spectrum
-    mspec = melSpec(wav, fs, frame_len, frame_shift, num_bands);
+    mspec = melSpec(wav, fs, frame_len, frame_shift, window_type, num_bands);
     
     % Cepstral coefficients
     mspec = log(mspec);

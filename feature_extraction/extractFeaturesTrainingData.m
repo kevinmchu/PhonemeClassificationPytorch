@@ -21,6 +21,7 @@ feat_type = 'mfcc';
 fs = 16000; % Hz
 frame_len = 0.025; % s
 frame_shift = 0.010; % s
+window_type = 'hann';
 num_coeffs = 12;
 use_energy = true;
 
@@ -81,10 +82,10 @@ generateWavInfo(timit_dir, 'dev', conditions);
 %generateWavInfo(timit_dir, 'dev', conditions ,feat_dir, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
 
 % Create feature info files and feature directories
-generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
-generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'train', conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'dev', conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, 'train', conditions);
-extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, 'dev', conditions);
+extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'train', conditions);
+extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'dev', conditions);
