@@ -4,7 +4,7 @@ import os
 import torch
 from train import read_conf
 from train import get_device
-from test import predict
+from evaluate import predict
 from validation import read_feat_list
 from phone_mapping import get_label_encoder
 from phone_mapping import phone_to_phoneme

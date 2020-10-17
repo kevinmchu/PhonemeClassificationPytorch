@@ -2,7 +2,7 @@
 % Author: Kevin Chu
 % Last Modified: 07/25/2020
 
-function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy)
+function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy)
     % Create info file as well as directories for feature files
     %
     % Args:
@@ -14,6 +14,7 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -window_type (str): window type for feature extraction
     %   -num_coeffs (int): number of coefficients
     %   -use_energy (bool): whether to extract energy as an additional
     %   feature
@@ -66,11 +67,12 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
     paramInfo{2} = sprintf('fs = %dHz', fs);
     paramInfo{3} = sprintf('frame_len = %ds', frame_len);
     paramInfo{4} = sprintf('frame_shift = %ds', frame_shift);
-    paramInfo{5} = sprintf('num_coeffs = %d', num_coeffs);
+    paramInfo{5} = sprintf('window_type = %s', window_type);
+    paramInfo{6} = sprintf('num_coeffs = %d', num_coeffs);
     if use_energy
-        paramInfo{6} = strcat('use_energy = True');
+        paramInfo{7} = strcat('use_energy = True');
     else
-        paramInfo{6} = strcat('use_energy = False');
+        paramInfo{7} = strcat('use_energy = False');
     end
     outFile = strcat('../data', filesep, dataset, '_', condition, filesep, feat_type, '_info.txt');
     fid = fopen(outFile, 'w');

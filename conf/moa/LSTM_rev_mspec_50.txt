@@ -1,6 +1,7 @@
 [Architecture]
-model_type = MLP
-num_hidden = 218
+model_type = LSTM
+bidirectional = False
+num_hidden = 50
 num_classes = 7
 
 [Training]
@@ -19,4 +20,3 @@ num_coeffs = 40
 use_energy = False
 deltas = False
 deltaDeltas = False
-window_size = 10

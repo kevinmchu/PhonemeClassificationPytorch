@@ -13,11 +13,14 @@ from sklearn import preprocessing
 
 # Labels
 from phone_mapping import get_label_encoder
+from phone_mapping import get_phone_list
 from phone_mapping import get_moa_list
 from phone_mapping import phone_to_moa
+from phone_mapping import phone_to_bpg
 
 # Training and testing data
 from validation import read_feat_list
+import evaluate
 
 # PyTorch
 import torch
@@ -27,7 +30,7 @@ import torch.optim as optim
 
 # Models
 from net import initialize_network
-from net import get_model_type
+from net import initialize_pretrained_network
 
 from tqdm import tqdm
 import logging
@@ -48,7 +51,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scaler):
+def train(experts, optimizers, le, conf_dict, file_list, scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -73,40 +76,59 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     # Get device
     device = get_device()
 
-    # Set model to training mode
-    model.train()
+    for bpg in experts.keys():
+        # Set model to training mode
+        experts[bpg].train()
 
     for file in file_list:
-        # Clear existing gradients
-        optimizer.zero_grad()
-
         # Extract features and labels for current file
         x_batch, y_batch = read_feat_file(file, conf_dict)
 
         # Normalize features
         x_batch = scaler.transform(x_batch)
 
-        # Encode labels and integers
-        y_batch = le.transform(y_batch).astype('long')
+        # Convert phone labels to bpg
+        if conf_dict["bpg"] == "moa":
+            y_bpg = phone_to_moa(list(y_batch))
+        elif conf_dict["bpg"] == "bpg":
+            y_bpg = phone_to_bpg(list(y_batch))
 
-        # Move to GPU
+        y_bpg = np.array(y_bpg)
+
+        # Move normalized features to GPU
         x_batch = (torch.from_numpy(x_batch)).to(device)
-        y_batch = (torch.from_numpy(y_batch)).to(device)
 
-        # Get outputs
-        train_outputs = model(x_batch)
+        for bpg in experts.keys():
+            # Clear existing gradients
+            optimizers[bpg].zero_grad()
 
-        # Calculate loss
-        # Note: NLL loss actually calculates cross entropy loss when given values
-        # transformed by log softmax
-        loss = F.nll_loss(train_outputs, y_batch, reduction='sum')
+            bpg_idx = np.argwhere(y_bpg == bpg)
+            bpg_idx = np.reshape(bpg_idx, (len(bpg_idx),))
 
-        # Backpropagate and update weights
-        loss.backward()
-        optimizer.step()
+            if len(bpg_idx) > 0:
+                # Initialize y as array of -1
+                # Used to replace irrelevant bpg's with -1
+                y = -np.ones((len(y_batch, ))).astype('long')
+
+                # Replace -1's at indices where phone is correct moa
+                y[bpg_idx] = le[bpg].transform(np.array(y_batch)[bpg_idx]).astype('long')
+
+                # Move to GPU
+                y = (torch.from_numpy(y)).to(device)
+
+                # Get outputs
+                train_outputs = experts[bpg](x_batch)
+
+                # Calculate loss
+                # Ignore inputs that do not correspond to current moa
+                loss = F.nll_loss(train_outputs, y, reduction='sum', ignore_index=-1)
+
+                # Backpropagate and update weights
+                loss.backward()
+                optimizers[bpg].step()
 
 
-def validate(model, le, conf_dict, file_list, scaler):
+def validate(experts, le, conf_dict, file_list, scaler, bpg_model):
     """ Validate phoneme classification model
     
     Args:
@@ -132,11 +154,20 @@ def validate(model, le, conf_dict, file_list, scaler):
     # Shuffle
     random.shuffle(file_list)
 
+    # Get label encoder for phone/phoneme
+    le_phone = get_label_encoder(conf_dict["label_type"])
+
+    # If hierarchical classification, get label encoder for bpg
+    if conf_dict["hierarchical"]:
+        le_bpg = get_label_encoder(conf_dict["bpg"])
+
     # Get device
     device = get_device()
 
     # Evaluation mode
-    model.eval()
+    bpg_model.eval()
+    for bpg in experts.keys():
+        experts[bpg].eval()
 
     with torch.no_grad():
         for file in file_list:
@@ -147,26 +178,33 @@ def validate(model, le, conf_dict, file_list, scaler):
             x_batch = scaler.transform(x_batch)
 
             # Encode labels as integers
-            y_batch = le.transform(y_batch).astype('long')
+            y_batch = le_phone.transform(y_batch).astype('long')
 
             # Move to GPU
             x_batch = (torch.from_numpy(x_batch)).to(device)
             y_batch = (torch.from_numpy(y_batch)).to(device)
 
-            # Get outputs and predictions
-            outputs = model(x_batch)
+            # Get moa model outputs
+            bpg_outputs = bpg_model(x_batch)
+
+            # Get posterior probabilities from each expert
+            posteriors = torch.zeros((len(y_batch), len(le_phone.classes_)))
+            posteriors = posteriors.to(device)
+            for bpg in experts.keys():
+                outputs = experts[bpg](x_batch)
+                posteriors[:, le_phone.transform(le[bpg].classes_)] = bpg_outputs[:, le_bpg.transform([bpg])] + outputs
 
             # Update running loss
-            running_loss += (F.nll_loss(outputs, y_batch, reduction='sum')).item()
+            running_loss += (F.nll_loss(posteriors, y_batch, reduction='sum'))
 
             # Calculate accuracy
-            matches = y_batch.cpu().numpy() == torch.argmax(outputs, dim=1).cpu().numpy()
-            running_correct += np.sum(matches)
+            matches = (y_batch == torch.argmax(posteriors, dim=1))
+            running_correct += torch.sum(matches)
             num_frames += len(matches)
 
     # Average loss over all batches
-    metrics['acc'] = running_correct / num_frames
-    metrics['loss'] = running_loss / num_frames
+    metrics['acc'] = running_correct.item() / num_frames
+    metrics['loss'] = running_loss.item() / num_frames
 
     return metrics
 
@@ -239,7 +277,7 @@ def train_and_validate(conf_file, num_models):
 
     Args:
         conf_file (str): txt file containing model info
-        num_models (int): number of instances to of model to train
+        num_models (int): number of instances of model to train
 
     Returns
         none
@@ -247,9 +285,6 @@ def train_and_validate(conf_file, num_models):
     """
     # Read in conf file
     conf_dict = read_conf(conf_file)
-
-    # Label encoder
-    le = get_label_encoder(conf_dict["label_type"])
 
     for i in range(num_models):
         # Model directory - create new folder for each new instance of a model
@@ -266,23 +301,42 @@ def train_and_validate(conf_file, num_models):
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
-        # Instantiate the network
-        logging.info("Initializing model")
-        model = initialize_network(conf_dict)
-        
-        if "pretrained_model_dir" in conf_dict.keys():
-            pretrained_model_dir = os.path.join(conf_dict["pretrained_model_dir"], "model" + str(i))
-            pretrained_dict = torch.load(pretrained_model_dir + "/model.pt")
-            for i, param in enumerate(pretrained_dict):
-                if i < len(pretrained_dict.keys())-2:
-                    model.load_state_dict({param: pretrained_dict[param]}, strict=False)
-
-        # Send network to GPU (if applicable)
+        # Initializing the experts using same architecture
+        logging.info("Initializing experts")
+        experts = {}
+        optimizers = {}
+        le = {}
         device = get_device()
-        model.to(device)
 
-        # Stochastic gradient descent with user-defined learning rate and momentum
-        optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+        num_classes = conf_dict["num_classes"]
+
+        phone_list = get_phone_list()
+
+        if conf_dict["bpg"] == "moa":
+            phone_list_as_bpg = phone_to_moa(phone_list)
+        elif conf_dict["bpg"] == "bpg":
+            phone_list_as_bpg = phone_to_bpg(phone_list)
+
+        le_bpg = get_label_encoder(conf_dict["bpg"])
+
+        for bpg in le_bpg.classes_:
+            # Initialize experts
+            idx = np.argwhere(np.array(phone_list_as_bpg) == bpg)
+            idx = np.reshape(idx, (len(idx),))
+            conf_dict["num_classes"] = len(idx)
+            experts[bpg] = initialize_network(conf_dict)
+
+            experts[bpg].to(device)
+
+            # Get label encoder
+            le[bpg] = preprocessing.LabelEncoder()
+            le[bpg].fit(list(np.array(phone_list)[idx]))
+
+            # Different SGD optimizer for each expert
+            optimizers[bpg] = optim.SGD(experts[bpg].parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+
+        # Reset num_classes
+        conf_dict["num_classes"] = num_classes
 
         # Read in feature files
         train_list = read_feat_list(conf_dict["training"])
@@ -293,6 +347,10 @@ def train_and_validate(conf_file, num_models):
         scaler = fit_normalizer(train_list, conf_dict)
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
+
+        # Load trained moa model
+        bpg_model_dir = os.path.join(conf_dict["bpg_model_dir"], "model" + str(i))
+        bpg_model = torch.load(bpg_model_dir + "/model", map_location=torch.device(get_device()))
 
         # Training curves
         training_curves = model_dir + "/training_curves"
@@ -309,8 +367,8 @@ def train_and_validate(conf_file, num_models):
                 current_time = datetime.now().strftime("%m/%d/%y %H:%M:%S")
                 logging.info("Time: {}, Epoch: {}".format(current_time, epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scaler)
-                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                train(experts, optimizers, le, conf_dict, train_list, scaler)
+                valid_metrics = validate(experts, le, conf_dict, valid_list, scaler, bpg_model)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
@@ -319,7 +377,8 @@ def train_and_validate(conf_file, num_models):
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
-                    torch.save(model.state_dict(), model_dir + "/model.pt")
+                    for bpg in le_bpg.classes_:
+                        torch.save(experts[bpg], model_dir + "/model_" + str(bpg))
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
@@ -330,8 +389,8 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa/LSTM_rev_mspec_125.txt"
-    num_models = 1
+    conf_file = "conf/phone/LSTM_LSTM_rev_mspec_moa_experts.txt"
+    num_models = 4
 
     # Train and validate model
     train_and_validate(conf_file, num_models)

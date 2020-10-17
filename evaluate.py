@@ -9,12 +9,14 @@ import os
 from validation import read_feat_list
 from pathlib import Path
 import logging
+from net import get_model_type
 
 # Evaluation
 from performance_metrics import get_performance_metrics
 
 # Labels
 from phone_mapping import get_label_encoder
+from phone_mapping import phone_to_moa
 
 def predict(model, le, conf_dict, file_list, scale_file):
     """ Test phoneme classification model
@@ -36,6 +38,12 @@ def predict(model, le, conf_dict, file_list, scale_file):
     # Track file name, true class, predicted class, and prob of predicted class
     summary = {"file": [], "y_true": [], "y_pred": [], "y_prob": []}
 
+    # If hierarchical classification, get label encoder for moa
+    if 'hierarchical' in conf_dict.keys():
+        if conf_dict["hierarchical"]:
+            le_moa = get_label_encoder("moa")
+            unique_moa = np.reshape(le_moa.transform(le_moa.classes_), (1, len(le_moa.classes_)))
+
     # Get the device
     device = get_device()
 
@@ -56,6 +64,11 @@ def predict(model, le, conf_dict, file_list, scale_file):
 
             # Normalize features
             x_batch = scaler.transform(x_batch)
+
+            # If hierarchical, add moa feature
+            if "hierarchical" in conf_dict.keys():
+                if conf_dict["hierarchical"]:
+                    blah = 1
 
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
@@ -102,11 +115,21 @@ def test(conf_file, model_idx, test_set, feat_type):
     # Load trained model
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
                              "model" + str(model_idx))
-    model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
+
+    model = get_model_type(conf_dict)
+    model.load_state_dict(torch.load(model_dir + "/model.pt"))
+
+    # Move to GPU
+    device = get_device()
+    model.to(device)
 
     # Directory in which to save decoding results
     decode_dir = os.path.join(model_dir, "decode", test_set)
-    Path(decode_dir).mkdir(parents=True)
+
+    try:
+        Path(decode_dir).mkdir(parents=True)
+    except FileExistsError:
+        print("File exists: " + decode_dir + ". Overwriting existing files")
 
     # Configure log file
     logging.basicConfig(filename=decode_dir+"/log", filemode="w", level=logging.INFO)
@@ -130,22 +153,21 @@ def test(conf_file, model_idx, test_set, feat_type):
 
 if __name__ == '__main__':
     # # Inputs
-    # conf_file = "conf/phone/LSTM_rev_mspec.txt"
+    # conf_file = "conf/phoneme/LSTM_rev_mspec.txt"
     # model_idx = 0
     # test_set = "test_stairway_1_1_3_90"
     # feat_type = "mspec"
     #
     # test(conf_file, model_idx, test_set, feat_type)
 
-    conf_dir = "conf/phone"
-    model_dir = "LSTM_rev"
-    conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
-    model_idxs = [0, 1, 2, 3, 4]
+    conf_dir = "conf/moa"
+    conf_files = ["conf/moa/LSTM_rev_mspec_75.txt"]
+    model_idxs = [0]
     test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-    feat_types = ["mspec"]
+    feat_types = ["melSpectrogram"]
 
     for feat_type in feat_types:
-        conf_file = conf_dir + "/" + model_dir + "_" + feat_type + ".txt"
-        for model_idx in model_idxs:
-            for test_set in test_sets:
-                test(conf_file, model_idx, test_set, feat_type)
+       for conf_file in conf_files:
+            for model_idx in model_idxs:
+                for test_set in test_sets:
+                    test(conf_file, model_idx, test_set, feat_type)

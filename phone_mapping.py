@@ -57,6 +57,18 @@ def get_moa_list():
     return moa
 
 
+def get_bpg_list():
+    """ Returns broad phonetic group list
+
+    Returns:
+        bpg (list): list of broad phonetic groups plus silence
+
+    """
+    bpg = ["silence", "stop", "fricative", "nasal", "vowel"]
+
+    return bpg
+
+
 def get_label_encoder(label_type):
     """ Get label encoder
 
@@ -73,6 +85,8 @@ def get_label_encoder(label_type):
         labels = get_phoneme_list()
     elif label_type == "moa":
         labels = get_moa_list()
+    elif label_type == "bpg":
+        labels = get_bpg_list()
 
     le = preprocessing.LabelEncoder()
     le.fit(labels)
@@ -147,3 +161,36 @@ def phone_to_moa(phones):
         moa.append(phone_dict[phone])
     
     return moa
+
+
+def phone_to_bpg(phones):
+    """
+    This function converts a list of phones into their broad phonetic group (bpg)
+
+    Args:
+        phones (list): list of phones to convert
+
+    Returns:
+        bpg (list): list of phones converted to broad phonetic group
+    """
+
+    # Phone to bpg mapping
+    file = "phones/phone_to_bpg_timit.txt"
+
+    # Open
+    file_obj = open(file, "r")
+    x = file_obj.readlines()
+    file_obj.close()
+
+    # Creates a dictionary where keys are phonemes and values of bpg
+    phone_dict = {}
+    for i in range(0, len(x)):
+        temp = x[i].split()
+        phone_dict[temp[0]] = temp[1]
+
+    # Converts phonemes to manner of articulation
+    bpg = []
+    for phone in phones:
+        bpg.append(phone_dict[phone])
+
+    return bpg

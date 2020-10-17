@@ -2,7 +2,7 @@
 % Author: Kevin Chu
 % Last Modified: 07/25/2020
 
-function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, dataset, conditions)
+function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, dataset, conditions)
     % Extracts the features and labels for files in the current dataset,
     % and outputs the information in a feature file
     %
@@ -12,6 +12,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -window_type (str): window type for feature extraction
     %   -num_coeffs (int): number of coefficients
     %   -use_energy (bool): whether to extract energy as an additional
     %   feature
@@ -66,12 +67,12 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coe
     for i = 1:numel(wavInfo)
         fprintf('Extracting features for file %d out of %d\n', i, numel(wavInfo));
         phnFile = strrep(wavInfo{i}, '.WAV', '.PHN');
-        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, featFiles{i}, allConditions{i});
+        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFiles{i}, allConditions{i});
     end
     
 end
 
-function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, featFile, condition)
+function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFile, condition)
     % Extracts features and labels for a single wav file
     %
     % Args:
@@ -82,6 +83,7 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -window_type (str): window type for feature extraction
     %   -num_coeffs (int): number of coefficients
     %   -use_energy (bool): whether to use energy as an additional feature
     %   -featFile (str): file containing extracted features and labels
@@ -99,7 +101,7 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     end
     
     % Extract features and labels
-    x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+    x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
     y = extractLabels(wav, phnFile, fs, size(x,1), frame_len, frame_shift, condition);
     featsAndLabs = [num2cell(x),y];
     featsAndLabs = featsAndLabs';
@@ -150,7 +152,7 @@ function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(..
 
 end
 
-function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy)
+function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy)
     % Calculate static features for a single wav file
     %
     % Args:
@@ -160,6 +162,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
     %   -frame_len (double): length of analysis frame in sec
     %   -frame_shift (double): amount by which to shift analysis frame in
     %   sec
+    %   -window_type (str): window type for feature extraction
     %   -num_coeffs (int): number of coefficients
     %   -use_energy (bool): whether to use energy as an additional feature
     %
@@ -203,15 +206,15 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, num_coe
             x = x';
             
         case 'gspec'
-            x = gammaSpec(wav, fs, frame_len, frame_shift, num_coeffs);
+            x = gammaSpec(wav, fs, frame_len, frame_shift, window_type, num_coeffs);
             x = log(x');
             
         case 'mspec'
-            x = melSpec(wav, fs, frame_len, frame_shift, num_coeffs);            
+            x = melSpec(wav, fs, frame_len, frame_shift, window_type, num_coeffs);            
             x = log(x');
             
         case 'mfcc'
-            x = melFcc(wav, fs, frame_len, frame_shift, 40, num_coeffs, use_energy);
+            x = melFcc(wav, fs, frame_len, frame_shift, window_type, 40, num_coeffs, use_energy);
             x = x';
             
         otherwise

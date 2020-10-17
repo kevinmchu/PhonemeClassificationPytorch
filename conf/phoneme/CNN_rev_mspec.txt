@@ -2,20 +2,20 @@
 model_type = CNN
 num_feature_maps = 20
 window_size = 10
-kernel_size = (3,3)
+kernel_size = (5,5)
 max_pooling = (4,1)
-num_hidden = 67
-num_classes = 61
+num_hidden = 88
+num_classes = 39
 
 [Training]
-num_epochs = 200
+num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
-label_type = phone
+label_type = phoneme
 
 [Datasets]
-training = data/train_anechoic/mspec.txt
-development = data/dev_anechoic/mspec.txt
+training = data/train_rev/mspec.txt
+development = data/dev_rev/mspec.txt
 
 [Features]
 feature_type = mspec
