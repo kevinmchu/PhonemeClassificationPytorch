@@ -146,17 +146,17 @@ def write_probs_to_txt(y_true, y_pred, y_prob_phoneme):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phone/LSTM_rev_mspec.txt"
+    conf_file = "conf/phone/LSTM_rev_mspec_ci.txt"
     model_idx = 0
     test_set = "test_office_0_1_3"
-    feat_type = "mspec"
+    feat_type = "mspec_ci"
 
     summary = test(conf_file, model_idx, test_set, feat_type)
 
     le_phone = get_label_encoder("phone")
-    le_phoneme = get_label_encoder("phoneme")
+    le_phoneme = get_label_encoder("moa")
     phone_list = le_phone.classes_
-    phoneme_list = phone_to_phoneme(phone_list, 39)
+    phoneme_list = phone_to_moa(phone_list)
     phoneme_list = np.array(phoneme_list)
 
     y_true = summary["y_true"][0]
@@ -169,8 +169,8 @@ if __name__ == '__main__':
         idx = np.reshape(idx, (np.shape(idx)[0]*np.shape(idx)[1]))
         y_prob_phoneme[:, le_phoneme.transform([phoneme])[0]] = np.sum(y_prob_phone[:, idx], axis=1)
 
-    y_true = phone_to_phoneme(le_phone.inverse_transform(y_true), 39)
-    y_pred = phone_to_phoneme(le_phone.inverse_transform(y_pred), 39)
+    y_true = phone_to_moa(le_phone.inverse_transform(y_true))
+    y_pred = phone_to_moa(le_phone.inverse_transform(y_pred))
 
     write_probs_to_txt(y_true, y_pred, y_prob_phoneme)
 

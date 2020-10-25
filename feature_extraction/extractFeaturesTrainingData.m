@@ -17,20 +17,21 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'mfcc';
-fs = 16000; % Hz
-frame_len = 0.025; % s
-frame_shift = 0.010; % s
-window_type = 'hann';
-num_coeffs = 12;
-use_energy = true;
-
-% feat_type = 'mspec_ci';
+% feat_type = 'mfcc';
 % fs = 16000; % Hz
-% frame_len = 0.008; % s
-% frame_shift = 0.002; % s
-% num_coeffs = 22;
-% use_energy = false;
+% frame_len = 0.025; % s
+% frame_shift = 0.010; % s
+% window_type = 'hann';
+% num_coeffs = 12;
+% use_energy = true;
+
+feat_type = 'gspec_ci';
+fs = 16000; % Hz
+frame_len = 0.008; % s
+frame_shift = 0.002; % s
+window_type = 'hann';
+num_coeffs = 22;
+use_energy = false;
 
 % Acoustic conditions
 % conditions = {'anechoic'};

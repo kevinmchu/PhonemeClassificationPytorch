@@ -13,19 +13,21 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'mfcc';
-fs = 16000; % Hz
-frame_len = 0.025; % s
-frame_shift = 0.010; % s
-num_coeffs = 12;
-use_energy = true;
-
-% feat_type = 'ace';
+% feat_type = 'mfcc';
 % fs = 16000; % Hz
-% frame_len = 0.008; % s
-% frame_shift = 0.002; % s
-% num_coeffs = 22;
-% use_energy = false;
+% frame_len = 0.025; % s
+% frame_shift = 0.010; % s
+% window_type = 'hann';
+% num_coeffs = 12;
+% use_energy = true;
+
+feat_type = 'gspec_ci';
+fs = 16000; % Hz
+frame_len = 0.008; % s
+frame_shift = 0.002; % s
+window_type = 'hann';
+num_coeffs = 22;
+use_energy = false;
 
 % Acoustic conditions
 % conditions = {'anechoic'};
@@ -48,8 +50,8 @@ conditions = struct('condition', conditions, 'proportion', proportions);
 generateWavInfo(timit_dir, 'test', conditions);
 
 % Create feature info files and feature directories
-generateFeatInfo(timit_dir, feat_dir, 'test', conditions, feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'test', conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, num_coeffs, use_energy, 'test', conditions);
+extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'test', conditions);

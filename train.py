@@ -330,7 +330,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa/LSTM_rev_mspec_125.txt"
+    conf_file = "conf/phoneme/LSTM_rev_mspec_25.txt"
     num_models = 1
 
     # Train and validate model

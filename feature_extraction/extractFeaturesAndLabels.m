@@ -185,7 +185,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_
             
             x = x';
             
-        case {'fftspec_ci', 'mspec_ci'}
+        case {'fftspec_ci', 'mspec_ci', 'gspec_ci'}
             p = ACE_map;
             [pFft,~] = Split_process(p, 'FFT_filterbank_proc');
             x = Process(pFft, wav);
@@ -195,6 +195,9 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_
             if strcmp(feat_type, 'mspec_ci')
                 mfb = designAuditoryFilterBank(fs, 'FrequencyScale', 'mel', 'FFTLength', round(frame_len*fs), 'NumBands', num_coeffs);
                 x = mfb*x;
+            elseif strcmp(feat_type, 'gspec_ci')
+                gfb = designAuditoryFilterBank(fs, 'FrequencyScale', 'erb', 'FFTLength', round(frame_len*fs), 'NumBands', num_coeffs);
+                x = gfb*x;
             end
             
             x = log(x);

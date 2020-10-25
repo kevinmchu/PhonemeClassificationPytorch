@@ -9,12 +9,12 @@ from phone_mapping import phone_to_moa
 from phone_mapping import phone_to_bpg
 
 
-def fit_normalizer(file_list, label_type):
+def fit_normalizer(file_list, conf_dict):
     """ Fits feature normalizer using list of files
 
     Args:
         file_list (list): list of training files
-        label_type(str): phone or phoneme
+        conf_dict (dict): dictionary with neural network architecture
 
     Returns:
         scaler (StandardScaler): scaler estimated on training data
@@ -25,7 +25,7 @@ def fit_normalizer(file_list, label_type):
 
     for file in file_list:
         # Get features
-        X, _ = read_feat_file(file, label_type)
+        X, _ = read_feat_file(file, conf_dict)
 
         # Update standard scaler
         scaler.partial_fit(X)
