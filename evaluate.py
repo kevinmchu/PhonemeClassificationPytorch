@@ -161,10 +161,10 @@ if __name__ == '__main__':
     # test(conf_file, model_idx, test_set, feat_type)
 
     conf_dir = "conf/phoneme"
-    conf_files = ["conf/phoneme/LSTM_rev_mspec_25.txt"]
+    conf_files = ["conf/phoneme/LSTM_rev_ace.txt"]
     model_idxs = [0]
     test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-    feat_types = ["melSpectrogram"]
+    feat_types = ["ace"]
 
     for feat_type in feat_types:
        for conf_file in conf_files:
