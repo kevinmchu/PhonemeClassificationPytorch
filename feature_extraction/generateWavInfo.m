@@ -1,8 +1,8 @@
 % generateWavInfo.m
 % Author: Kevin Chu
-% Last Modified: 07/25/2020
+% Last Modified: 02/23/2021
 
-function generateWavInfo(timitDir, dataset, conditions)
+function generateWavInfo(timitDir, dataset, conditions, rir_type)
     % Generates .txt file with list of all the .wav files in the dataset
     %
     % Args:
@@ -10,6 +10,7 @@ function generateWavInfo(timitDir, dataset, conditions)
     %   -dataset (str): specifies whether training, development, or testing
     %   set
     %   -conditions (cell): set of acoustic conditions
+    %   -rir_type (str): whether recorded or simulated
     %
     % Returns:
     %   -none
@@ -19,7 +20,11 @@ function generateWavInfo(timitDir, dataset, conditions)
         condition = 'anechoic';
     else
         if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
-            condition = 'rev';
+            if strcmp(rir_type, 'recorded')
+              condition = 'rev';
+            elseif strcmp(rir_type, 'simulated')
+              condition = 'sim_rev';
+            end
         else
             condition = extractfield(conditions, 'condition');
             condition = strsplit(condition{1}, filesep);

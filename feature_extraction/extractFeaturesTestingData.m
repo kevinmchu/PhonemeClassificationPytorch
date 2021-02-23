@@ -1,6 +1,6 @@
 % featureExtraction.m
 % Author: Kevin Chu
-% Last Modified: 07/25/2020
+% Last Modified: 02/23/2021
 %
 % This script extracts features and labels for the testing data
 
@@ -30,6 +30,7 @@ use_energy = false;
 % use_energy = true;
 
 % Acoustic conditions
+rir_type = 'recorded';
 % conditions = {'anechoic'};
 % conditions = {'stairway/air_binaural_stairway_1_1_3_90.mat'};
 conditions = {'office/air_binaural_office_1_1_3.mat'};
@@ -47,10 +48,10 @@ end
 conditions = struct('condition', conditions, 'proportion', proportions);
 
 % Create data files
-generateWavInfo(timit_dir, 'test', conditions);
+generateWavInfo(timit_dir, 'test', conditions, rir_type);
 
 % Create feature info files and feature directories
-generateFeatInfo(timit_dir, feat_dir, 'test', conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
+generateFeatInfo(timit_dir, feat_dir, 'test', conditions, rir_type, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');

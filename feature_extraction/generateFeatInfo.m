@@ -1,8 +1,8 @@
 % generateFeatInfo.m
 % Author: Kevin Chu
-% Last Modified: 07/25/2020
+% Last Modified: 02/23/2021
 
-function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy)
+function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, rir_type, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy)
     % Create info file as well as directories for feature files
     %
     % Args:
@@ -29,7 +29,11 @@ function generateFeatInfo(timit_dir, feat_dir, dataset, conditions, feat_type, f
         condition = 'anechoic';
     else
         if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
-            condition = 'rev';
+            if strcmp(rir_type, 'recorded')
+              condition = 'rev';
+            elseif strcmp(rir_type, 'simulated')
+              condition = 'sim_rev';
+            end
         else
             condition = extractfield(conditions, 'condition');
             condition = strsplit(condition{1}, filesep);

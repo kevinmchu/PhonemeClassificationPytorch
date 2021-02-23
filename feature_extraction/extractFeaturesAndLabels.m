@@ -1,8 +1,8 @@
 % extractFeaturesAndLabels.m
 % Author: Kevin Chu
-% Last Modified: 07/25/2020
+% Last Modified: 02/23/2021
 
-function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, dataset, conditions)
+function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, dataset, conditions, rir_type)
     % Extracts the features and labels for files in the current dataset,
     % and outputs the information in a feature file
     %
@@ -20,6 +20,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_
     %   set
     %   -conditions (struct): acoustic conditions and the proportion of
     %   sentences to which they are applied
+    %   -rir_type (str): whether recorded or simulated
     %
     % Returns:
     %   none
@@ -31,7 +32,11 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_
         condition = 'anechoic';
     else
         if strcmp(dataset, 'train') || strcmp(dataset, 'dev')
-            condition = 'rev';
+            if strcmp(rir_type, 'recorded')
+              condition = 'rev';
+            elseif strcmp(rir_type, 'simulated')
+              condition = 'sim_rev';
+            end
         else
             condition = extractfield(conditions, 'condition');
             condition = strsplit(condition{1}, filesep);
@@ -61,18 +66,23 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_
         allConditions{c} = repmat({conditions(c).condition},round(conditions(c).proportion*numel(wavInfo)),1);
     end
     allConditions = vertcat(allConditions{:});
+    
+    if numel(allConditions) ~= numel(wavInfo)
+        allConditions = [allConditions; extractfield(conditions(1:numel(wavInfo)-numel(allConditions)), 'condition')'];
+    end
+    
     allConditions = allConditions(randperm(numel(allConditions)));
     
     % Extract features and labels for all the files
     for i = 1:numel(wavInfo)
         fprintf('Extracting features for file %d out of %d\n', i, numel(wavInfo));
         phnFile = strrep(wavInfo{i}, '.WAV', '.PHN');
-        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFiles{i}, allConditions{i});
+        extractFeaturesAndLabelsSingleFile(wavInfo{i}, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFiles{i}, allConditions{i}, rir_type);
     end
     
 end
 
-function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFile, condition)
+function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, featFile, condition, rir_type)
     % Extracts features and labels for a single wav file
     %
     % Args:
@@ -88,21 +98,32 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     %   -use_energy (bool): whether to use energy as an additional feature
     %   -featFile (str): file containing extracted features and labels
     %   -condition (str): acoustic condition
+    %   -rir_type (str): whether recorded or simulated
     %
     % Returns:
     %   none
+    
+    [wav, ~] = audioread(wavFile);
 
     % If condition is anechoic, load file. If reverberant, apply the
     % recorded RIR.
-    if strcmp(condition,'anechoic')
-        [wav,~] = audioread(wavFile);
-    else
-        [wav,~] = applyRealWorldRecordedReverberation(wavFile,condition);
+    if ~strcmp(condition, 'anechoic')       
+        % Load rir
+        load(condition);
+        
+        if strcmp(rir_type, 'recorded')
+            [wav,~] = applyRealWorldRecordedReverberation(wav, fs, h_air, air_info);
+        elseif strcmp(rir_type, 'simulated')
+            wav = applySimulatedReverberation(wav, fs, RIR_cell{1}, Fs);
+        end
     end
+    
+    % Normalize to prevent clipping
+    wav = wav * 0.99/max(abs(wav));
     
     % Extract features and labels
     x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy);
-    y = extractLabels(wav, phnFile, fs, size(x,1), frame_len, frame_shift, condition);
+    y = extractLabels(wav, phnFile, fs, size(x,1), frame_len, frame_shift, condition, rir_type);
     featsAndLabs = [num2cell(x),y];
     featsAndLabs = featsAndLabs';
     
@@ -114,17 +135,11 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
     
 end
 
-function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(...
-    signalFileLoc, reverberationFileLoc)
+function reverberantSignal = applyRealWorldRecordedReverberation(signal, fs, h_air, air_info)
     % This function applies a real-world recorded reverberant condition to
     % a speech signal.
     %
     % Args:
-    %   -signalFileLoc (str): location of wav file (path and name) to which
-    %   reverberation will be applied
-    %   -reverberationFileLoc (str): location of mat file (path and name)
-    %   containing the real-world recorded reverberation (h_air) as well as
-    %   the information structure (air_info)
     %
     % Returns:
     %   -reverberantSignal (array): sound data of signal after reverberation
@@ -133,22 +148,25 @@ function [reverberantSignal, Fsampling] = applyRealWorldRecordedReverberation(..
     %
     % Taken from CST code
 
-    % Load WAV file
-    [signal, Fsampling] = audioread(signalFileLoc);
-
-    % Load reverberation recording and information
-    load(reverberationFileLoc)
-
     % Check that sampling rates frequencies the same
-    if (air_info.fs ~= Fsampling)
-        h_air = resample(h_air, Fsampling, air_info.fs);
+    if (air_info.fs ~= fs)
+        h_air = resample(h_air, fs, air_info.fs);
     end
 
     % Add reverberation to the signal
     reverberantSignal = fftfilt(h_air, signal);
 
-    % Normalize
-    reverberantSignal = (reverberantSignal * 0.99) ./ max(abs(reverberantSignal));
+end
+
+function reverberantSignal = applySimulatedReverberation(signal, fs, h, fs_h)
+  
+  % Check that sampling rates are the same
+  if fs_h ~= fs
+    h = resample(h, fs, fs_h);
+  end
+
+  % Add reverberation
+  reverberantSignal = fftfilt(h, signal);
 
 end
 
@@ -226,7 +244,7 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_
     
 end
 
-function labels = extractLabels(wav, phnFile, fs, n_frames, frame_len, frame_shift, condition)
+function labels = extractLabels(wav, phnFile, fs, n_frames, frame_len, frame_shift, condition, rir_type)
     % Extracts framewise ground truth labels for a given wav file
     %
     % Args:
@@ -249,7 +267,7 @@ function labels = extractLabels(wav, phnFile, fs, n_frames, frame_len, frame_shi
     % time delay introduced by the RIR. We correct the phone alignments to
     % account for this shift.
     if ~strcmp(condition,'anechoic')
-        alignments = correctAlignments(alignments,condition);
+        alignments = correctAlignments(alignments, condition, rir_type);
     end
     
     % Convert sample indices into frame indices
@@ -281,7 +299,7 @@ function alignments = readPhn(phnFile)
     alignments(:,1:2) = cellfun(@str2num, alignments(:,1:2), 'UniformOutput', false);
 end
 
-function newAlignments = correctAlignments(alignments, rirFile)
+function newAlignments = correctAlignments(alignments, rirFile, rir_type)
     % The reverberant signal is delayed wrt to the anechoic signal because
     % of the time delay from source to receiver. Here, we adjust the
     % alignments to account for this shift.
@@ -298,7 +316,11 @@ function newAlignments = correctAlignments(alignments, rirFile)
     load(rirFile);
     
     % Calculate delay of reverberant signal
-    delay = calculateReverbDelay(air_info, 16000);
+    if strcmp(rir_type, 'recorded')
+      delay = calculateReverbDelayRecRir(air_info, 16000);
+    elseif strcmp(rir_type, 'simulated')
+      delay = calculateReverbDelaySimRir(X_src, X_rcv, Fs);
+    end
     
     newAlignments = alignments;
     
@@ -324,31 +346,6 @@ function newAlignments = correctAlignments(alignments, rirFile)
     % original end alignment
     newAlignments{end,2} = alignments{end,2};
     
-end
-
-function delay = calculateReverbDelay(air_info, fs)
-    % Calculates delay of reverberant signal wrt anechoic signal
-    %
-    % Args:
-    %   -air_info (struct): contains info about the rir
-    %   -fs (double): sampling frequency in Hz
-    %
-    % Returns:
-    %   delay (double): delay in samples
-    
-    % Speed of sound in m/s
-    c = 343;
-    
-    % Calculate delay in samples
-    switch air_info.room
-        case 'aula_carolina'
-            delay = round(air_info.distance/c * fs);
-        case {'booth', 'lecture', 'meeting', 'office'}
-            delay = round((air_info.distance/100)/c * fs);
-        case 'stairway'
-            delay = round(air_info.d_speaker_mic/c * fs);
-    end
-
 end
 
 function alignmentsNew = samples2Frames(alignments, frame_len, frame_shift, fs)
