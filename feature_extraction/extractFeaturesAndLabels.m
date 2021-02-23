@@ -216,8 +216,8 @@ function x = extractFeatures(wav, feat_type, fs, frame_len, frame_shift, window_
             x = melSpec(wav, fs, frame_len, frame_shift, window_type, num_coeffs);            
             x = log(x');
             
-        case 'mfcc'
-            x = melFcc(wav, fs, frame_len, frame_shift, window_type, 40, num_coeffs, use_energy);
+        case {'mfcc', 'mfcc_ci'}
+            x = melFcc(wav, fs, frame_len, frame_shift, window_type, 22, num_coeffs, use_energy);
             x = x';
             
         otherwise

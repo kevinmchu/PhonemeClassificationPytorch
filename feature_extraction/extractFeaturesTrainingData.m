@@ -9,6 +9,7 @@ clear; close all; clc;
 
 %addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/DNN_toolbox/get_feat/features/rastamat/'));
 addpath(genpath('/media/batcave/personal/chu.kevin/Toolboxes/nucleusToolbox/'));
+warning('off');
 
 %% USER-DEFINED INPUTS
 % Necessary directories
@@ -17,21 +18,21 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-% feat_type = 'mfcc';
-% fs = 16000; % Hz
-% frame_len = 0.025; % s
-% frame_shift = 0.010; % s
-% window_type = 'hann';
-% num_coeffs = 12;
-% use_energy = true;
-
-feat_type = 'gspec_ci';
+feat_type = 'mspec';
 fs = 16000; % Hz
-frame_len = 0.008; % s
-frame_shift = 0.002; % s
+frame_len = 0.025; % s
+frame_shift = 0.010; % s
 window_type = 'hann';
 num_coeffs = 22;
 use_energy = false;
+
+% feat_type = 'mfcc_ci';
+% fs = 16000; % Hz
+% frame_len = 0.008; % s
+% frame_shift = 0.002; % s
+% window_type = 'hann';
+% num_coeffs = 12;
+% use_energy = true;
 
 % Acoustic conditions
 % conditions = {'anechoic'};

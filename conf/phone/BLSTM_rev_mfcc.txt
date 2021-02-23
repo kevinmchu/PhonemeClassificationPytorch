@@ -1,14 +1,11 @@
 [Architecture]
-model_type = CNN
-num_feature_maps = 40
-window_size = 10
-kernel_size = (3,3)
-max_pooling = (2,2)
-num_hidden = 116
+model_type = LSTM
+bidirectional = True
+num_hidden = 93
 num_classes = 61
 
 [Training]
-num_epochs = 200
+num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
 label_type = phone
@@ -21,5 +18,6 @@ development = data/dev_rev/mfcc.txt
 feature_type = mfcc
 num_coeffs = 12
 use_energy = True
+causal_deltas = False
 deltas = True
-deltaDeltas = True
+deltaDeltas = False

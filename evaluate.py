@@ -91,7 +91,7 @@ def predict(model, le, conf_dict, file_list, scale_file):
     return summary
 
 
-def test(conf_file, model_idx, test_set, feat_type):
+def test(conf_file, model_idx, test_set):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
@@ -99,7 +99,6 @@ def test(conf_file, model_idx, test_set, feat_type):
         conf_file (str): txt file containing model info
         model_idx (int): instance of the model
         test_set (str): specifies testing condition
-        feat_type (str): mspec or mfcc
 
     Returns:
         none
@@ -110,7 +109,7 @@ def test(conf_file, model_idx, test_set, feat_type):
     conf_dict = read_conf(conf_file)
 
     # List of feature files for the testing data
-    test_feat_list = "data/" + test_set + "/" + feat_type + ".txt"
+    test_feat_list = "data/" + test_set + "/" + conf_dict["feature_type"] + ".txt"
 
     # Load trained model
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
@@ -153,21 +152,18 @@ def test(conf_file, model_idx, test_set, feat_type):
 
 if __name__ == '__main__':
     # # Inputs
-    # conf_file = "conf/phoneme/LSTM_rev_mspec.txt"
-    # model_idx = 0
-    # test_set = "test_stairway_1_1_3_90"
-    # feat_type = "mspec"
-    #
-    # test(conf_file, model_idx, test_set, feat_type)
+    #conf_file = "conf/phone/BLSTM_rev_mfcc_ci.txt"
+    #model_idx = 0
+    #test_set = "test_stairway_1_1_3_90"
+    
+    #test(conf_file, model_idx, test_set)
 
-    conf_dir = "conf/phoneme"
-    conf_files = ["conf/phoneme/LSTM_rev_ace.txt"]
-    model_idxs = [0]
+    conf_dir = "conf/phone"
+    conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
+    model_idxs = [0,1,2,3,4]
     test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-    feat_types = ["ace"]
 
-    for feat_type in feat_types:
-       for conf_file in conf_files:
-            for model_idx in model_idxs:
-                for test_set in test_sets:
-                    test(conf_file, model_idx, test_set, feat_type)
+    for conf_file in conf_files:
+        for model_idx in model_idxs:
+            for test_set in test_sets:
+                test(conf_file, model_idx, test_set)

@@ -1,0 +1,24 @@
+[Architecture]
+model_type = LSTM
+bidirectional = True
+num_hidden = 93
+num_classes = 61
+
+[Training]
+train_subset = 0.2
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phone
+
+[Datasets]
+training = data/train_rev/mfcc_ci.txt
+development = data/dev_rev/mfcc_ci.txt
+
+[Features]
+feature_type = mfcc_ci
+num_coeffs = 12
+use_energy = True
+causal_deltas = False
+deltas = True
+deltaDeltas = False

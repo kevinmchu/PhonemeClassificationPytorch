@@ -1,9 +1,10 @@
 # featureExtraction.py
 # Author: Kevin Chu
-# Last Modified: 06/11/2020
+# Last Modified: 02/01/2021
 
 import numpy as np
 from sklearn import preprocessing
+from scipy import signal
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
 from phone_mapping import phone_to_bpg
@@ -62,15 +63,14 @@ def read_feat_file(filename, conf_dict):
     featsAndLabs = list(map(lambda a: a.split(), x))
     X = np.array(list(map(lambda a: a[0:-1], featsAndLabs)), dtype='float32')
     y = list(map(lambda a: a[-1], featsAndLabs))
-
-    # Deltas and delta-deltas calculated causally
+    
+    # Deltas and delta-deltas
     if conf_dict["deltas"]:
-        deltas = np.concatenate((np.zeros((1, np.shape(X)[1]), dtype='float32'), np.diff(X, axis=0)), axis=0)
+        deltas = calculate_deltas(conf_dict, X)
         X = np.concatenate((X, deltas), axis=1)
         if conf_dict["deltaDeltas"]:
-            delta_deltas = np.concatenate((np.zeros((1, np.shape(deltas)[1]), dtype='float32'), np.diff(deltas, axis=0)), axis=0)
-            X = np.concatenate((X, delta_deltas), axis=1)
-
+            delta_deltas = calculate_deltas(conf_dict, deltas)
+            X = np.concatenate((X, deltaDeltas), axis=1)
 
     if conf_dict["label_type"] == 'phoneme':
         # Map phones to phonemes
@@ -86,3 +86,54 @@ def read_feat_file(filename, conf_dict):
         y = np.array(y, dtype='object')
     
     return X, y
+
+
+def calculate_deltas(conf_dict, X):
+    """
+    Calculate deltas from feature matrix. Calculates delta-deltas if given
+    deltas as the input.
+
+    Args:
+        conf_dict (dict): dictionary with configuration parameters
+        X (np.array): feature matrix (can be raw features or deltas)
+
+    Returns:
+        deltas (np.array): deltas
+    """
+
+    # Number of features in feature matrix
+    n_feats = np.shape(X)[1]
+
+    # If causality not specified, assume causal
+    if "causal_deltas" not in conf_dict.keys():
+        conf_dict["causal_deltas"] = True
+
+    # Causal
+    if conf_dict["causal_deltas"]:
+        # Current frame minus previous frame
+        kernel = np.array([[1.],[-1.]])
+
+        # Kernel index that corresponds to the current frame
+        idx_curr_frame = 1
+
+        # Calculate deltas for regions where kernel completely overlaps with feature array
+        deltas = signal.convolve2d(kernel, X, mode='valid')
+
+    # Non-causal
+    else:
+        # Calculate deltas over +/- 2 frames
+        kernel = np.array([[2.],[1.],[0.],[-1.],[-2.]])
+
+        # Kernel index that corresponds to the current frame
+        idx_curr_frame = 1
+
+        # Calculate deltas for regions where kernel completely overlaps with feature array
+        deltas = signal.convolve2d(kernel, X, mode='valid')/np.sum(kernel**2)
+
+    # Apply zero padding for regions where kernel does not completely overlap with feature array
+    deltas = np.concatenate((np.zeros((idx_curr_frame, n_feats)), deltas, np.zeros((len(kernel)-1-idx_curr_frame, n_feats))))
+
+    # Cast to float32
+    deltas = np.float32(deltas)
+
+    return deltas
