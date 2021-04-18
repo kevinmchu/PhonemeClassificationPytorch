@@ -13,27 +13,27 @@ rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_
 feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
 
 % Feature extraction parameters
-feat_type = 'mspec';
-fs = 16000; % Hz
-frame_len = 0.025; % s
-frame_shift = 0.010; % s
-window_type = 'hann';
-num_coeffs = 22;
-use_energy = false;
-
-% feat_type = 'mfcc_ci';
+% feat_type = 'mspec';
 % fs = 16000; % Hz
-% frame_len = 0.008; % s
-% frame_shift = 0.002; % s
+% frame_len = 0.025; % s
+% frame_shift = 0.010; % s
 % window_type = 'hann';
-% num_coeffs = 12;
-% use_energy = true;
+% num_coeffs = 22;
+% use_energy = false;
+
+feat_type = 'fftspec_ci';
+fs = 16000; % Hz
+frame_len = 0.008; % s
+frame_shift = 0.002; % s
+window_type = 'hann';
+num_coeffs = 65;
+use_energy = false;
 
 % Acoustic conditions
 rir_type = 'recorded';
 % conditions = {'anechoic'};
-% conditions = {'stairway/air_binaural_stairway_1_1_3_90.mat'};
-conditions = {'office/air_binaural_office_1_1_3.mat'};
+% conditions = {'stairway/air_binaural_stairway_0_1_3_90.mat'};
+conditions = {'office/air_binaural_office_0_1_3.mat'};
 proportions = {1};
 
 %% TESTING DATA
@@ -55,4 +55,4 @@ generateFeatInfo(timit_dir, feat_dir, 'test', conditions, rir_type, feat_type, f
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'test', conditions);
+extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'test', conditions, rir_type);

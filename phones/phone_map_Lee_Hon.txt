@@ -48,6 +48,7 @@ q	sil	sil
 r	r	r
 s	s	s
 sh	sh	sh
+sil	sil	sil
 t	t	t
 tcl	cl	sil
 th	th	th

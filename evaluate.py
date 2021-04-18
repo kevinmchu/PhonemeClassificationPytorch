@@ -152,18 +152,18 @@ def test(conf_file, model_idx, test_set):
 
 if __name__ == '__main__':
     # # Inputs
-    #conf_file = "conf/phone/BLSTM_rev_mfcc_ci.txt"
-    #model_idx = 0
-    #test_set = "test_stairway_1_1_3_90"
+    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    model_idx = 0
+    test_set = "test_hint_office_0_1_3"
     
-    #test(conf_file, model_idx, test_set)
+    test(conf_file, model_idx, test_set)
 
-    conf_dir = "conf/phone"
-    conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
-    model_idxs = [0,1,2,3,4]
-    test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
+    #conf_dir = "conf/phone"
+    #conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
+    #model_idxs = [0,1,2,3,4]
+    #test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
 
-    for conf_file in conf_files:
-        for model_idx in model_idxs:
-            for test_set in test_sets:
-                test(conf_file, model_idx, test_set)
+    #for conf_file in conf_files:
+    #    for model_idx in model_idxs:
+    #        for test_set in test_sets:
+    #            test(conf_file, model_idx, test_set)

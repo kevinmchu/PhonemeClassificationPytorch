@@ -2,18 +2,19 @@
 model_type = LSTM
 bidirectional = False
 num_hidden = 123
-num_classes = 61
+num_classes = 7
 
 [Training]
 train_subset = 0.2
 num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
-label_type = phone
+label_type = moa
+gradient_clip_value = 100
 
 [Datasets]
-training = data/train_sim_rev/fftspec_ci.txt
-development = data/dev_sim_rev/fftspec_ci.txt
+training = data/train_librispeech_sim_rev/log_fft.txt
+development = data/dev_librispeech_sim_rev/log_fft.txt
 
 [Features]
 feature_type = fftspec_ci

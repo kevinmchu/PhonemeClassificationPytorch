@@ -67,7 +67,7 @@ function extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_
     end
     allConditions = vertcat(allConditions{:});
     
-    if numel(allConditions) ~= numel(wavInfo)
+    if numel(allConditions) < numel(wavInfo)
         allConditions = [allConditions; extractfield(conditions(1:numel(wavInfo)-numel(allConditions)), 'condition')'];
     end
     
@@ -112,7 +112,7 @@ function extractFeaturesAndLabelsSingleFile(wavFile, phnFile, feat_type, fs, fra
         load(condition);
         
         if strcmp(rir_type, 'recorded')
-            [wav,~] = applyRealWorldRecordedReverberation(wav, fs, h_air, air_info);
+            wav = applyRealWorldRecordedReverberation(wav, fs, h_air, air_info);
         elseif strcmp(rir_type, 'simulated')
             wav = applySimulatedReverberation(wav, fs, RIR_cell{1}, Fs);
         end

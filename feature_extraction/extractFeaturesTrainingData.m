@@ -111,5 +111,5 @@ conditions = struct('condition', conditions, 'proportion', num2cell(proportions)
 
 % Extract features
 fprintf('********** FEATURE EXTRACTION **********\n');
-extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'train', conditions, rir_type);
+% extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'train', conditions, rir_type);
 extractFeaturesAndLabels(feat_type, fs, frame_len, frame_shift, window_type, num_coeffs, use_energy, 'dev', conditions, rir_type);

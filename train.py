@@ -101,8 +101,14 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         # transformed by log softmax
         loss = F.nll_loss(train_outputs, y_batch, reduction='sum')
 
-        # Backpropagate and update weights
+        # Backpropagate
         loss.backward()
+
+        # Gradient clipping, if applicable
+        if "gradient_clip_value" in conf_dict.keys():
+            nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
+
+        # Update weights
         optimizer.step()
 
 
@@ -293,6 +299,9 @@ def train_and_validate(conf_file, num_models):
         scaler = fit_normalizer(train_list, conf_dict)
         with open(scale_file, 'wb') as f:
             pickle.dump(scaler, f)
+        # scale_file = model_dir.replace("model" + str(i), "model1") + "/scaler.pickle"
+        # with open(scale_file, 'rb') as f:
+        #     scaler = pickle.load(f)
 
         # Training curves
         training_curves = model_dir + "/training_curves"
@@ -330,7 +339,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phone/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model

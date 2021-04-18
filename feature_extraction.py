@@ -61,7 +61,7 @@ def read_feat_file(filename, conf_dict):
     
     # Extract features and labels
     featsAndLabs = list(map(lambda a: a.split(), x))
-    X = np.array(list(map(lambda a: a[0:-1], featsAndLabs)), dtype='float32')
+    X = np.array(list(map(lambda a: a[0:conf_dict["num_coeffs"]], featsAndLabs)), dtype='float32')
     y = list(map(lambda a: a[-1], featsAndLabs))
     
     # Deltas and delta-deltas
