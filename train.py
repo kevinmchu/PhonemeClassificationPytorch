@@ -309,8 +309,12 @@ def train_and_validate(conf_file, num_models):
         device = get_device()
         model.to(device)
 
+
         # Stochastic gradient descent with user-defined learning rate and momentum
-        optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+        if conf_dict["optimizer"] == "sgd":
+            optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
+        elif conf_dict["optimizer"] == "adam":
+            optimizer = optim.Adam(model.parameters(), lr=conf_dict["learning_rate"])
 
         # Read in feature files
         train_list = read_feat_list(conf_dict["training"])
