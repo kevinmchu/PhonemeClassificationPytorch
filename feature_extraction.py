@@ -72,6 +72,10 @@ def read_feat_file(filename, conf_dict):
             delta_deltas = calculate_deltas(conf_dict, deltas)
             X = np.concatenate((X, deltaDeltas), axis=1)
 
+    # Splice
+    if "window_size" in conf_dict.keys():
+        X = splice(X, conf_dict)
+
     if conf_dict["label_type"] == 'phoneme':
         # Map phones to phonemes
         y = phone_to_phoneme(y, 39)
@@ -137,3 +141,33 @@ def calculate_deltas(conf_dict, X):
     deltas = np.float32(deltas)
 
     return deltas
+
+
+def splice(X, conf_dict):
+    """
+    This function concatenates a feature matrix with features
+    from causal time frames. The purpose of this is to increase
+    the amount of temporal context available to the model.
+
+    Args:
+        X (np.array): matrix of features from current time frame
+        conf_dict (dict): dictionary with configuration parameters
+
+    Returns:
+        X (np.array): feature matrix with causal time frames
+        concatenated
+    """
+
+    if "window_size" in conf_dict.keys():
+        x0 = np.zeros((conf_dict["window_size"]-1, np.shape(X)[1]), dtype='float32')
+        X = np.concatenate((x0, X), axis=0)
+
+        # Splice                                                                                                  
+        batch_sz = np.shape(X)[0] - conf_dict["window_size"] + 1
+        idx = np.linspace(0, conf_dict["window_size"]-1, conf_dict["window_size"])
+        idx = np.tile(idx, (batch_sz, 1)) + np.linspace(0, batch_sz-1, batch_sz).reshape((batch_sz, 1))
+        idx = idx.astype(int)
+        X = X[idx, :]
+        X = X.reshape(np.shape(X)[0], conf_dict["num_features"])
+
+    return X

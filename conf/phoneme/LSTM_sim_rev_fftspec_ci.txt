@@ -5,6 +5,7 @@ num_hidden = 123
 num_classes = 39
 
 [Training]
+batch-size = 1
 train_subset = 0.2
 num_epochs = 250
 learning_rate = 1e-5

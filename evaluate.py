@@ -91,13 +91,13 @@ def predict(model, le, conf_dict, file_list, scale_file):
     return summary
 
 
-def test(conf_file, model_idx, test_set):
+def test(conf_file, model_name, test_set):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
     Args:
         conf_file (str): txt file containing model info
-        model_idx (int): instance of the model
+        model_name (str): name of the model
         test_set (str): specifies testing condition
 
     Returns:
@@ -113,7 +113,7 @@ def test(conf_file, model_idx, test_set):
 
     # Load trained model
     model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
-                             "model" + str(model_idx))
+                             model_name)
 
     model = get_model_type(conf_dict)
     model.load_state_dict(torch.load(model_dir + "/model.pt"))
@@ -153,10 +153,10 @@ def test(conf_file, model_idx, test_set):
 if __name__ == '__main__':
     # # Inputs
     conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
-    model_idx = 0
-    test_set = "test_hint_office_0_1_3"
+    model_name = "librispeech"
+    test_set = "test_hint_aula_carolina_0_1_4_90_3"
     
-    test(conf_file, model_idx, test_set)
+    test(conf_file, model_name, test_set)
 
     #conf_dir = "conf/phone"
     #conf_files = ["conf/phone/LSTM_rev_mspec.txt"]

@@ -63,9 +63,6 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         none
         
     """
-    # Shuffle
-    random.shuffle(file_list)
-
     # Select random subset of training data if applicable
     if 'train_subset' in conf_dict.keys():
         file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
@@ -76,40 +73,61 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
     # Set model to training mode
     model.train()
 
-    for file in file_list:
-        # Clear existing gradients
-        optimizer.zero_grad()
+    # Clear existing gradients
+    optimizer.zero_grad()
 
+    # Preallocate
+    X_batch = []
+    y_batch = []
+
+    # Load data
+    for file in file_list:
         # Extract features and labels for current file
-        x_batch, y_batch = read_feat_file(file, conf_dict)
+        X, y = read_feat_file(file, conf_dict)
 
         # Normalize features
-        x_batch = scaler.transform(x_batch)
+        X = scaler.transform(X)
 
-        # Encode labels and integers
-        y_batch = le.transform(y_batch).astype('long')
+        # Encode labels as integers
+        y = le.transform(y).astype('long')
 
-        # Move to GPU
-        x_batch = (torch.from_numpy(x_batch)).to(device)
-        y_batch = (torch.from_numpy(y_batch)).to(device)
+        # Append
+        X_batch.append(X)
+        y_batch.append(y)
 
-        # Get outputs
-        train_outputs = model(x_batch)
+    seq_lens = np.array(list(map(lambda a: len(a), y_batch)), dtype='int')
+    max_seq_len = np.max(seq_lens)
 
-        # Calculate loss
-        # Note: NLL loss actually calculates cross entropy loss when given values
-        # transformed by log softmax
-        loss = F.nll_loss(train_outputs, y_batch, reduction='sum')
+    # Apply -1 padding, which pads shorter utterances to match length of longest utterance
+    X_padding = list(map(lambda a: -np.ones((max_seq_len - np.shape(a)[0], np.shape(a)[1]), dtype='float32'), X_batch))
+    y_padding = list(map(lambda a: -np.ones((max_seq_len - np.shape(a)[0], np.shape(a)[1]), dtype='long'), y_batch))
+    X_batch = np.array(list(map(lambda a, b: np.concatenate((a, b), axis=0), X_batch, X_padding)))
+    y_batch = np.array(list(map(lambda a, b: np.concatenate((a, b), axis=0), y_batch, y_padding)))
 
-        # Backpropagate
-        loss.backward()
+    # Move to GPU
+    X_batch = (torch.from_numpy(X_batch)).to(device)
+    y_batch = (torch.from_numpy(y_batch)).to(device)
 
-        # Gradient clipping, if applicable
-        if "gradient_clip_value" in conf_dict.keys():
-            nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
+    # Get outputs
+    train_outputs = model(X_batch)
 
-        # Update weights
-        optimizer.step()
+    # Loss mask - only calculate loss over valid regions of the utterance (i.e. not -1 padded)
+    loss_mask = (y_batch != -1)
+
+    # Calculate loss
+    # Note: NLL loss actually calculates cross entropy loss when given values
+    # transformed by log softmax
+    loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))
+
+    # Backpropagate
+    loss.backward()
+
+    # Gradient clipping, if applicable
+    if "gradient_clip_value" in conf_dict.keys():
+        nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
+
+    # Update weights
+    optimizer.step()
 
 
 def validate(model, le, conf_dict, file_list, scaler):
@@ -147,26 +165,30 @@ def validate(model, le, conf_dict, file_list, scaler):
     with torch.no_grad():
         for file in file_list:
             # Extract features and labels for current file
-            x_batch, y_batch = read_feat_file(file, conf_dict)
+            X, y = read_feat_file(file, conf_dict)
 
             # Normalize features
-            x_batch = scaler.transform(x_batch)
+            X = scaler.transform(X)
 
             # Encode labels as integers
-            y_batch = le.transform(y_batch).astype('long')
+            y = le.transform(y).astype('long')
+
+            # Reshape to (num_batch, seq_len, num_feats/num_out)
+            X = np.reshape(X, (1, np.shape(X)[0], np.shape(X)[1]))
+            y = np.reshape(y, (1, np.shape(y)[0], np.shape(y)[1]))
 
             # Move to GPU
-            x_batch = (torch.from_numpy(x_batch)).to(device)
-            y_batch = (torch.from_numpy(y_batch)).to(device)
+            X = (torch.from_numpy(X)).to(device)
+            y = (torch.from_numpy(y)).to(device)
 
             # Get outputs and predictions
-            outputs = model(x_batch)
+            outputs = model(X)
 
             # Update running loss
-            running_loss += (F.nll_loss(outputs, y_batch, reduction='sum')).item()
+            running_loss += (F.nll_loss(outputs, y, reduction='sum')).item()
 
             # Calculate accuracy
-            matches = y_batch.cpu().numpy() == torch.argmax(outputs, dim=1).cpu().numpy()
+            matches = y.cpu().numpy() == torch.argmax(outputs, dim=1).cpu().numpy()
             running_correct += np.sum(matches)
             num_frames += len(matches)
 
@@ -313,12 +335,29 @@ def train_and_validate(conf_file, num_models):
         max_acc = 0
         acc = []
 
-        for epoch in tqdm(range(conf_dict["num_epochs"])):
+        iterator = tqdm(range(conf_dict["num_epochs"]))
+
+        for epoch in iterator:
             with open(training_curves, "a") as file_obj:
                 current_time = datetime.now().strftime("%m/%d/%y %H:%M:%S")
                 logging.info("Time: {}, Epoch: {}".format(current_time, epoch+1))
 
-                train(model, optimizer, le, conf_dict, train_list, scaler)
+                # Select random subset of training data if applicable
+                if 'train_subset' in conf_dict.keys():
+                    subset = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
+
+                # Train on mini batches
+                random.shuffle(subset)
+                num_batches = int(np.ceil(len(subset) / conf_dict["batch_size"]))
+
+                for batch_idx in range(num_batches):
+                    if batch_idx < num_batches-1:
+                        batch = subset[batch_idx * conf_dict["batch_size"]:(batch_idx + 1) * conf_dict["batch_size"]]
+                    else:
+                        # Last batch uses leftover files, not a complete batch
+                        batch = subset[batch_idx * conf_dict["batch_size"]:]
+                    train(model, optimizer, le, conf_dict, batch, scaler)
+
                 valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
                 acc.append(valid_metrics["acc"])
 

@@ -169,7 +169,7 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 	cm = confusion_matrix(y_true, y_pred, sort_order)
 
 	# Convert confusion matrix from absolute counts to proportions
-	cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
+	#cm = cm.astype('float') / np.tile(np.reshape(np.sum(cm, axis=1), (len(cm), 1)), (1, len(cm)))
 
 	# Save confusion matrix to txt file
 	write_confmat(cm, sort_order, decode_dir, label_type)
