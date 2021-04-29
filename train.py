@@ -371,7 +371,8 @@ def train_and_validate(conf_file, num_models):
                 # Track the best model
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
-                    torch.save(model.state_dict(), model_dir + "/model.pt")
+                    torch.save({'model': model.state_dict(), 'optimizer': optimizer.state_dict()},
+                               model_dir + "/checkpoint.pt")
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:

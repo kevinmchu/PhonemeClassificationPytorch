@@ -116,7 +116,8 @@ def test(conf_file, model_name, test_set):
                              model_name)
 
     model = get_model_type(conf_dict)
-    model.load_state_dict(torch.load(model_dir + "/model.pt"))
+    checkpoint = torch.load(model_dir + "/checkpoint.pt")
+    model.load_state_dict(checkpoint['model'], strict=False)
 
     # Move to GPU
     device = get_device()
