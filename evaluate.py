@@ -73,6 +73,10 @@ def predict(model, le, conf_dict, file_list, scale_file):
             # Encode labels as integers
             y_batch = le.transform(y_batch).astype('long')
 
+            # Reshape to (num_batch, seq_len, num_feats/num_out)
+            x_batch = np.reshape(x_batch, (1, np.shape(x_batch)[0], np.shape(x_batch)[1]))
+            y_batch = np.reshape(y_batch, (1, np.shape(y_batch)[0], np.shape(y_batch)[1]))
+
             # Move to GPU
             x_batch = (torch.from_numpy(x_batch)).to(device)
             y_batch = (torch.from_numpy(y_batch)).to(device)
@@ -80,7 +84,7 @@ def predict(model, le, conf_dict, file_list, scale_file):
             # Get outputs and predictions
             outputs = model(x_batch)
             y_prob = torch.exp(outputs)
-            y_pred = torch.argmax(outputs, dim=1)
+            y_pred = torch.argmax(outputs, dim=2)
 
             # Update summary
             (summary['file']).append(file_list[i])

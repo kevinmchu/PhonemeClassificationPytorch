@@ -5,9 +5,80 @@
 import numpy as np
 from sklearn import preprocessing
 from scipy import signal
+import torch
+
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
 from phone_mapping import phone_to_bpg
+
+
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, file_list, conf_dict, le=None):
+        self.file_list = file_list
+        self.conf_dict = conf_dict
+        self.le = le
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, index):
+        # Read single feature file
+        X, y = read_feat_file(self.file_list[index], self.conf_dict)
+
+        # Map phones to categories and encode as integers
+        if bool(self.le):
+            y = self.le.transform(y).astype('long')
+
+        return X, y
+
+
+def collate_fn(batch):
+    """
+    Used to collate multiple files for dataloader
+    """
+    X_batch, y_batch = zip(*batch)
+    X_batch = list(X_batch)
+    y_batch = list(y_batch)
+
+    # Get maximum sequence length
+    seq_lens = np.array(list(map(lambda a: len(a), y_batch)), dtype='int')
+    max_seq_len = np.max(seq_lens)
+
+    # Pad features with inf and labels with zeros
+    for file_idx in range(len(y_batch)):
+        if np.shape(y_batch[file_idx])[0] < max_seq_len:
+            pad_len = max_seq_len - np.shape(y_batch[file_idx])[0]
+            X_batch[file_idx] = np.concatenate((X_batch[file_idx], np.inf*np.ones((pad_len, np.shape(X_batch[file_idx])[1]), dtype='float32')), axis=0)
+            y_batch[file_idx] = np.concatenate((y_batch[file_idx], np.zeros((pad_len,), dtype='long')), axis=0)
+
+    # Convert to np.array
+    X_batch = np.array(X_batch)
+    y_batch = np.array(y_batch)
+
+    return X_batch, y_batch
+
+
+class TorchStandardScaler:
+    """
+    Standard scaler for PyTorch tensors
+    """
+
+    def __init__(self, mean, var, device):
+        self.mean = (torch.tensor(mean.astype('float32')).unsqueeze(0)).to(device)
+        self.var = (torch.tensor(var.astype('float32')).unsqueeze(0)).to(device)
+
+    def transform(self, x):
+        """ Scales features to zero mean and unit variance
+
+        Args:
+            x (torch.Tensor): (batch x seq_len x nfeats)
+
+        Returns:
+            x_norm (torch.Tensor): scaled features
+        """
+        x_norm = (x - self.mean)/torch.sqrt(self.var)
+
+        return x_norm
 
 
 def fit_normalizer(file_list, conf_dict):
@@ -21,15 +92,21 @@ def fit_normalizer(file_list, conf_dict):
         scaler (StandardScaler): scaler estimated on training data
     """
 
-    # Instantiate
+    # Instantiate scaler
     scaler = preprocessing.StandardScaler()
 
-    for file in file_list:
-        # Get features
-        X, _ = read_feat_file(file, conf_dict)
+    # Generator for loading utterances
+    data_set = Dataset(file_list, conf_dict)
+    data_generator = torch.utils.data.DataLoader(data_set, batch_size=conf_dict["batch_size"],
+                                                 num_workers=4, collate_fn=collate_fn, shuffle=True)
 
-        # Update standard scaler
-        scaler.partial_fit(X)
+    # Read in one batch at a time and update scaler
+    for X_batch, _ in data_generator:
+        # Reshape
+        X_batch = np.reshape(X_batch, (np.shape(X_batch)[0]*np.shape(X_batch)[1], np.shape(X_batch)[2]))
+
+        # Update scaler using valid indices (i.e. not inf)
+        scaler.partial_fit(X_batch[np.where(np.prod(X_batch != np.inf, axis=1))])
 
     return scaler
     

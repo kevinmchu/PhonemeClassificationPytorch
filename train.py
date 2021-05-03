@@ -7,8 +7,11 @@ from pathlib import Path
 from datetime import datetime
 
 # Features
+from feature_extraction import collate_fn
+from feature_extraction import Dataset
 from feature_extraction import fit_normalizer
 from feature_extraction import read_feat_file
+from feature_extraction import TorchStandardScaler
 from sklearn import preprocessing
 
 # Labels
@@ -48,7 +51,7 @@ def get_device():
     return device
 
 
-def train(model, optimizer, le, conf_dict, file_list, scaler):
+def train(model, optimizer, le, conf_dict, train_generator, torch_scaler):
     """ Train a phoneme classification model
     
     Args:
@@ -63,74 +66,52 @@ def train(model, optimizer, le, conf_dict, file_list, scaler):
         none
         
     """
-    # Select random subset of training data if applicable
-    if 'train_subset' in conf_dict.keys():
-        file_list = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
+    # Training mode
+    model.train()
 
+    # Used to select random subset of training data - DELETE LATER
+    idx = 0
+    
     # Get device
     device = get_device()
 
-    # Set model to training mode
-    model.train()
+    for X_batch, y_batch in train_generator:
+        # Used to iterate through only a subset of data - DELETE LATER
+        if idx >= np.round(conf_dict["train_subset"] * 3696):
+            break
+        else:
+            idx += 1
+        
+        optimizer.zero_grad()
 
-    # Clear existing gradients
-    optimizer.zero_grad()
+        # Move to GPU
+        X_batch = torch_scaler.transform((torch.from_numpy(X_batch)).to(device))
+        y_batch = (torch.from_numpy(y_batch)).to(device)
 
-    # Preallocate
-    X_batch = []
-    y_batch = []
+        # Get outputs
+        train_outputs = model(X_batch)
+        train_outputs = train_outputs.permute(0, 2, 1)
 
-    # Load data
-    for file in file_list:
-        # Extract features and labels for current file
-        X, y = read_feat_file(file, conf_dict)
+        # Loss mask - only calculate loss over valid region of the utterance (i.e. not inf padded)
+        loss_mask = torch.prod(X_batch != np.inf, axis=2)
+    
+        # Calculate loss
+        # Note: NLL loss actually calculates cross entropy loss when given values
+        # transformed by log softmax
+        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))
 
-        # Normalize features
-        X = scaler.transform(X)
+        # Backpropagate
+        loss.backward()
 
-        # Encode labels as integers
-        y = le.transform(y).astype('long')
+        # Gradient clipping, if applicable
+        #if "gradient_clip_value" in conf_dict.keys():
+        #    nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
 
-        # Append
-        X_batch.append(X)
-        y_batch.append(y)
-
-    seq_lens = np.array(list(map(lambda a: len(a), y_batch)), dtype='int')
-    max_seq_len = np.max(seq_lens)
-
-    # Apply -1 padding, which pads shorter utterances to match length of longest utterance
-    X_padding = list(map(lambda a: -np.ones((max_seq_len - np.shape(a)[0], np.shape(a)[1]), dtype='float32'), X_batch))
-    y_padding = list(map(lambda a: -np.ones((max_seq_len - np.shape(a)[0], np.shape(a)[1]), dtype='long'), y_batch))
-    X_batch = np.array(list(map(lambda a, b: np.concatenate((a, b), axis=0), X_batch, X_padding)))
-    y_batch = np.array(list(map(lambda a, b: np.concatenate((a, b), axis=0), y_batch, y_padding)))
-
-    # Move to GPU
-    X_batch = (torch.from_numpy(X_batch)).to(device)
-    y_batch = (torch.from_numpy(y_batch)).to(device)
-
-    # Get outputs
-    train_outputs = model(X_batch)
-
-    # Loss mask - only calculate loss over valid regions of the utterance (i.e. not -1 padded)
-    loss_mask = (y_batch != -1)
-
-    # Calculate loss
-    # Note: NLL loss actually calculates cross entropy loss when given values
-    # transformed by log softmax
-    loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))
-
-    # Backpropagate
-    loss.backward()
-
-    # Gradient clipping, if applicable
-    if "gradient_clip_value" in conf_dict.keys():
-        nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
-
-    # Update weights
-    optimizer.step()
+        # Update weights
+        optimizer.step()
 
 
-def validate(model, le, conf_dict, file_list, scaler):
+def validate(model, le, conf_dict, valid_generator, torch_scaler):
     """ Validate phoneme classification model
     
     Args:
@@ -153,9 +134,6 @@ def validate(model, le, conf_dict, file_list, scaler):
     num_frames = 0
     running_loss = 0
 
-    # Shuffle
-    random.shuffle(file_list)
-
     # Get device
     device = get_device()
 
@@ -163,34 +141,24 @@ def validate(model, le, conf_dict, file_list, scaler):
     model.eval()
 
     with torch.no_grad():
-        for file in file_list:
-            # Extract features and labels for current file
-            X, y = read_feat_file(file, conf_dict)
-
-            # Normalize features
-            X = scaler.transform(X)
-
-            # Encode labels as integers
-            y = le.transform(y).astype('long')
-
-            # Reshape to (num_batch, seq_len, num_feats/num_out)
-            X = np.reshape(X, (1, np.shape(X)[0], np.shape(X)[1]))
-            y = np.reshape(y, (1, np.shape(y)[0], np.shape(y)[1]))
-
+        for X_val, y_val in valid_generator:
             # Move to GPU
-            X = (torch.from_numpy(X)).to(device)
-            y = (torch.from_numpy(y)).to(device)
+            X_val = torch_scaler.transform((torch.from_numpy(X_val)).to(device))
+            y_val = (torch.from_numpy(y_val)).to(device)
 
             # Get outputs and predictions
-            outputs = model(X)
+            outputs = model(X_val)
+            outputs = outputs.permute(0, 2, 1)
 
-            # Update running loss
-            running_loss += (F.nll_loss(outputs, y, reduction='sum')).item()
+            # Loss mask - only calculate loss over valid region of the utterance (i.e. not inf padded)
+            loss_mask = torch.prod(X_val != np.inf, axis=2)
+            running_loss += (torch.sum(loss_mask * F.nll_loss(outputs, y_val, reduction='none'))).item()
 
             # Calculate accuracy
-            matches = y.cpu().numpy() == torch.argmax(outputs, dim=1).cpu().numpy()
-            running_correct += np.sum(matches)
-            num_frames += len(matches)
+            matches = (y_val == torch.argmax(outputs, dim=1))
+            running_correct += (torch.sum(matches)).item()
+
+            num_frames += (torch.sum(loss_mask)).item()
 
     # Average loss over all batches
     metrics['acc'] = running_correct / num_frames
@@ -276,6 +244,10 @@ def train_and_validate(conf_file, num_models):
     # Read in conf file
     conf_dict = read_conf(conf_file)
 
+    # Read in feature files
+    train_list = read_feat_list(conf_dict["training"])
+    valid_list = read_feat_list(conf_dict["development"])
+
     # Label encoder
     le = get_label_encoder(conf_dict["label_type"])
 
@@ -294,6 +266,16 @@ def train_and_validate(conf_file, num_models):
         # Configure log file
         logging.basicConfig(filename=model_dir+"/log", filemode="w", level=logging.INFO)
 
+        # Get standard scaler
+        device = get_device()
+        # scaler = fit_normalizer(train_list, conf_dict)
+        with open(model_dir.replace("model" + str(i), "librispeech") + "/scaler.pickle", 'rb') as f:
+            scaler = pickle.load(f)
+        with open(model_dir + "/scaler.pickle", 'wb') as f2:
+            pickle.dump(scaler, f2)
+        torch_scaler = TorchStandardScaler(scaler.mean_, scaler.var_, device)
+
+        ########## CREATE MODEL ##########
         # Instantiate the network
         logging.info("Initializing model")
         model = initialize_network(conf_dict)
@@ -305,37 +287,31 @@ def train_and_validate(conf_file, num_models):
                 if i < len(pretrained_dict.keys())-2:
                     model.load_state_dict({param: pretrained_dict[param]}, strict=False)
 
-        # Send network to GPU (if applicable)
-        device = get_device()
         model.to(device)
 
-
-        # Stochastic gradient descent with user-defined learning rate and momentum
+        # Configure optimizer
         if conf_dict["optimizer"] == "sgd":
             optimizer = optim.SGD(model.parameters(), lr=conf_dict["learning_rate"], momentum=conf_dict["momentum"])
         elif conf_dict["optimizer"] == "adam":
             optimizer = optim.Adam(model.parameters(), lr=conf_dict["learning_rate"])
 
-        # Read in feature files
-        train_list = read_feat_list(conf_dict["training"])
-        valid_list = read_feat_list(conf_dict["development"])
-
-        # Get standard scaler
-        scale_file = model_dir + "/scaler.pickle"
-        scaler = fit_normalizer(train_list, conf_dict)
-        with open(scale_file, 'wb') as f:
-            pickle.dump(scaler, f)
-        # scale_file = model_dir.replace("model" + str(i), "model1") + "/scaler.pickle"
-        # with open(scale_file, 'rb') as f:
-        #     scaler = pickle.load(f)
-
+        ########## TRAINING ##########
         # Training curves
         training_curves = model_dir + "/training_curves"
         with open(training_curves, "w") as file_obj:
             file_obj.write("Epoch,Validation Accuracy,Validation Loss\n")
 
-        # Training
         logging.info("Training")
+
+        # Generators
+        train_set = Dataset(train_list, conf_dict, le)
+        train_generator = torch.utils.data.DataLoader(train_set, batch_size=conf_dict["batch_size"],
+                                                      num_workers=4, collate_fn=collate_fn, shuffle=True)
+        valid_set = Dataset(valid_list, conf_dict, le)
+        valid_generator = torch.utils.data.DataLoader(valid_set, batch_size=conf_dict["batch_size"],
+                                                      num_workers=4, collate_fn=collate_fn, shuffle=True)
+
+        # Used to track maximum accuracy
         max_acc = 0
         acc = []
 
@@ -346,29 +322,17 @@ def train_and_validate(conf_file, num_models):
                 current_time = datetime.now().strftime("%m/%d/%y %H:%M:%S")
                 logging.info("Time: {}, Epoch: {}".format(current_time, epoch+1))
 
-                # Select random subset of training data if applicable
-                if 'train_subset' in conf_dict.keys():
-                    subset = file_list[0:round(conf_dict['train_subset'] * len(file_list))]
+                # Train
+                train(model, optimizer, le, conf_dict, train_generator, torch_scaler)
 
-                # Train on mini batches
-                random.shuffle(subset)
-                num_batches = int(np.ceil(len(subset) / conf_dict["batch_size"]))
-
-                for batch_idx in range(num_batches):
-                    if batch_idx < num_batches-1:
-                        batch = subset[batch_idx * conf_dict["batch_size"]:(batch_idx + 1) * conf_dict["batch_size"]]
-                    else:
-                        # Last batch uses leftover files, not a complete batch
-                        batch = subset[batch_idx * conf_dict["batch_size"]:]
-                    train(model, optimizer, le, conf_dict, batch, scaler)
-
-                valid_metrics = validate(model, le, conf_dict, valid_list, scaler)
+                # Validate
+                valid_metrics = validate(model, le, conf_dict, valid_generator, torch_scaler)
                 acc.append(valid_metrics["acc"])
 
                 file_obj.write("{},{},{}\n".
                                 format(epoch+1, round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
 
-                # Track the best model
+                # Track the best model and create checkpoint
                 if valid_metrics['acc'] > max_acc:
                     max_acc = valid_metrics["acc"]
                     torch.save({'model': model.state_dict(), 'optimizer': optimizer.state_dict()},
@@ -378,12 +342,13 @@ def train_and_validate(conf_file, num_models):
                 if epoch >= 10:
                     if acc[-1] - acc[-11] < 0.001:
                         logging.info("Detected maximum validation accuracy. Stopping early.")
+                        iterator.close()
                         break
 
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/moa/LSTM_sim_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model
