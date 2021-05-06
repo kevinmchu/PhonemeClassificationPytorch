@@ -17,27 +17,9 @@ class SoftmaxRegression(nn.Module):
         self.fc = nn.Linear(self.num_features*self.window_size, conf_dict["num_classes"])
 
     def forward(self, x):
-        x = self.splice(x)
         x = self.fc(x)
 
-        return F.log_softmax(x, dim=1)
-
-    def splice(self, x):
-        # Add zero padding in time
-        x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
-        if torch.cuda.is_available():
-            x0 = x0.cuda()
-        x = torch.cat((x0, x), dim=0)
-
-        # Splice
-        batch_sz = x.size()[0] - self.window_size + 1
-        idx = torch.linspace(0, self.window_size-1, self.window_size)
-        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
-        idx = idx.to(int)
-        x = x[idx, :]
-        x = x.view(x.size()[0], self.window_size*self.num_features)
-
-        return x
+        return F.log_softmax(x, dim=2)
 
 
 class MLP(nn.Module):
@@ -51,31 +33,14 @@ class MLP(nn.Module):
         self.fc2 = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
         
     def forward(self, x):
-        x = self.splice(x)
-        x = torch.sigmoid(self.fc1(x))
+        x = self.fc1(x)
         x = self.fc2(x)
         
-        return F.log_softmax(x, dim=1)
-
-    def splice(self, x):
-        # Add zero padding in time
-        x0 = torch.zeros((self.window_size-1, x.size()[1]), dtype=torch.float)
-        if torch.cuda.is_available():
-            x0 = x0.cuda()
-        x = torch.cat((x0, x), dim=0)
-
-        # Splice
-        batch_sz = x.size()[0] - self.window_size + 1
-        idx = torch.linspace(0, self.window_size-1, self.window_size)
-        idx = idx.repeat(batch_sz, 1) + torch.linspace(0, batch_sz-1, batch_sz).view(batch_sz, 1)
-        idx = idx.to(int)
-        x = x[idx, :]
-        x = x.view(x.size()[0], self.window_size*self.num_features)
-
-        return x
+        return F.log_softmax(x, dim=2)
 
 
 class CNN(nn.Module):
+    # Note: still need to modify so batch is 0th dimension
 
     def __init__(self, conf_dict):
         super(CNN, self).__init__()
@@ -131,7 +96,7 @@ class RNNModel(nn.Module):
         super(RNNModel, self).__init__()
 
         self.rnn = nn.RNN(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
-                          bidirectional=conf_dict["bidirectional"])
+                          batch_first=True, bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
         if not conf_dict["bidirectional"]:
@@ -140,20 +105,14 @@ class RNNModel(nn.Module):
             self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
-        # Reshape features to (num_seq, num_batch, num_feats)
-        x = x.view(x.size()[0], 1, x.size()[1])
-
         # Pass through recurrent layer
         h, _ = self.rnn(x)
-
-        # Reshape hidden features to (num_seq, num_feats)
-        h = h.view(h.size()[0], h.size()[2])
 
         # Invert tanh and apply sigmoid
         h = 1/(1 + torch.sqrt((1 - h)/(1 + h)))
 
         # Pass hidden features to classification layer
-        out = F.log_softmax(self.fc(h), dim=1)
+        out = F.log_softmax(self.fc(h), dim=2)
 
         return out
 
@@ -166,11 +125,12 @@ class LSTMModel(nn.Module):
         # Stacked LSTMs
         if "num_layers" in conf_dict.keys():
             self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
-                                num_layers=conf_dict["num_layers"], bidirectional=conf_dict["bidirectional"])
+                                num_layers=conf_dict["num_layers"], batch_first=True,
+                                bidirectional=conf_dict["bidirectional"])
         # Default is one LSTM layer
         else:
             self.lstm = nn.LSTM(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"],
-                                bidirectional=conf_dict["bidirectional"])
+                                batch_first=True, bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
         if not conf_dict["bidirectional"]:
@@ -179,17 +139,11 @@ class LSTMModel(nn.Module):
             self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
-        # Reshape features to (num_seq, num_batch, num_feats)
-        x = x.view(x.size()[0], 1, x.size()[1])
-
         # Pass through LSTM layer
         h, (_, _) = self.lstm(x)
 
-        # Reshape hidden features to (num_seq, num_feats)
-        h = h.view(h.size()[0], h.size()[2])
-
         # Pass hidden features to classification layer
-        out = F.log_softmax(self.fc(h), dim=1)
+        out = F.log_softmax(self.fc(h), dim=2)
 
         return out
 
@@ -200,7 +154,7 @@ class GRUModel(nn.Module):
         super(GRUModel, self).__init__()
 
         self.gru = nn.GRU(input_size=conf_dict["num_features"], hidden_size=conf_dict["num_hidden"], num_layers=1,
-                          bidirectional=conf_dict["bidirectional"])
+                          batch_first=True, bidirectional=conf_dict["bidirectional"])
 
         # If bidirectional, double number of hidden units
         if not conf_dict["bidirectional"]:
@@ -209,17 +163,11 @@ class GRUModel(nn.Module):
             self.fc = nn.Linear(2*conf_dict["num_hidden"], conf_dict["num_classes"])
 
     def forward(self, x):
-        # Reshape features to (num_seq, num_batch, num_feats)
-        x = x.view(x.size()[0], 1, x.size()[1])
-
-        # Pass through LSTM layer
+        # Pass through GRU layer
         h, _ = self.gru(x)
 
-        # Reshape hidden features to (num_seq, num_feats)
-        h = h.view(h.size()[0], h.size()[2])
-
         # Pass hidden features to classification layer
-        out = F.log_softmax(self.fc(h), dim=1)
+        out = F.log_softmax(self.fc(h), dim=2)
 
         return out
 
