@@ -68,44 +68,29 @@ def train(model, optimizer, le, conf_dict, train_generator, torch_scaler):
     """
     # Training mode
     model.train()
-
-    # Used to select random subset of training data - DELETE LATER
-    idx = 0
     
     # Get device
     device = get_device()
 
-    for X_batch, y_batch in train_generator:
-        # Used to iterate through only a subset of data - DELETE LATER
-        if idx >= np.round(conf_dict["train_subset"] * 3696):
-            break
-        else:
-            idx += 1
-        
+    for X_batch, y_batch, loss_mask in train_generator:        
         optimizer.zero_grad()
 
         # Move to GPU
         X_batch = torch_scaler.transform((torch.from_numpy(X_batch)).to(device))
         y_batch = (torch.from_numpy(y_batch)).to(device)
+        loss_mask = (torch.from_numpy(loss_mask)).to(device)
 
         # Get outputs
         train_outputs = model(X_batch)
         train_outputs = train_outputs.permute(0, 2, 1)
-
-        # Loss mask - only calculate loss over valid region of the utterance (i.e. not inf padded)
-        loss_mask = torch.prod(X_batch != np.inf, axis=2)
     
         # Calculate loss
         # Note: NLL loss actually calculates cross entropy loss when given values
         # transformed by log softmax
-        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))
+        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))/conf_dict["batch_size"]
 
         # Backpropagate
         loss.backward()
-
-        # Gradient clipping, if applicable
-        #if "gradient_clip_value" in conf_dict.keys():
-        #    nn.utils.clip_grad_value_(model.parameters(), conf_dict["gradient_clip_value"])
 
         # Update weights
         optimizer.step()
@@ -141,22 +126,22 @@ def validate(model, le, conf_dict, valid_generator, torch_scaler):
     model.eval()
 
     with torch.no_grad():
-        for X_val, y_val in valid_generator:
+        for X_val, y_val, loss_mask in valid_generator:
             # Move to GPU
             X_val = torch_scaler.transform((torch.from_numpy(X_val)).to(device))
             y_val = (torch.from_numpy(y_val)).to(device)
+            loss_mask = (torch.from_numpy(loss_mask)).to(device)
 
             # Get outputs and predictions
             outputs = model(X_val)
             outputs = outputs.permute(0, 2, 1)
 
-            # Loss mask - only calculate loss over valid region of the utterance (i.e. not inf padded)
-            loss_mask = torch.prod(X_val != np.inf, axis=2)
+            # Loss mask - only calculate loss over valid region of the utterance (i.e. not padded)
             running_loss += (torch.sum(loss_mask * F.nll_loss(outputs, y_val, reduction='none'))).item()
 
             # Calculate accuracy
             matches = (y_val == torch.argmax(outputs, dim=1))
-            running_correct += (torch.sum(matches)).item()
+            running_correct += (torch.sum(loss_mask * matches)).item()
 
             num_frames += (torch.sum(loss_mask)).item()
 
@@ -268,9 +253,9 @@ def train_and_validate(conf_file, num_models):
 
         # Get standard scaler
         device = get_device()
-        # scaler = fit_normalizer(train_list, conf_dict)
-        with open(model_dir.replace("model" + str(i), "librispeech") + "/scaler.pickle", 'rb') as f:
-            scaler = pickle.load(f)
+        scaler = fit_normalizer(train_list, conf_dict)
+        #with open(model_dir.replace("model" + str(i), "librispeech") + "/scaler.pickle", 'rb') as f:
+        #    scaler = pickle.load(f)
         with open(model_dir + "/scaler.pickle", 'wb') as f2:
             pickle.dump(scaler, f2)
         torch_scaler = TorchStandardScaler(scaler.mean_, scaler.var_, device)
@@ -348,7 +333,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model
