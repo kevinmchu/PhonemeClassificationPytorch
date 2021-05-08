@@ -172,6 +172,32 @@ class GRUModel(nn.Module):
         return out
 
 
+class LSTMLM(nn.Module):
+
+    def __init__(self, conf_dict):
+        super(LSTMLM, self).__init__()
+
+        # Stacked LSTMs
+        if "num_layers" in conf_dict.keys():
+            self.lstm = nn.LSTM(input_size=conf_dict["num_classes"], hidden_size=conf_dict["num_hidden"],
+                                num_layers=conf_dict["num_layers"], batch_first=True)
+        # Default is one LSTM layer
+        else:
+            self.lstm = nn.LSTM(input_size=conf_dict["num_classes"], hidden_size=conf_dict["num_hidden"],
+                                batch_first=True)
+
+        self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
+
+    def forward(self, x):
+        # Pass through LSTM layer
+        h, (_, _) = self.lstm(x)
+
+        # Pass hidden features to classification layer
+        out = F.log_softmax(self.fc(h), dim=2)
+
+        return out
+    
+
 def initialize_weights(m):
     """ Initialize weights from Uniform(-0.1,0.1) distribution
     as was done in Graves and Schmidhuber, 2005
