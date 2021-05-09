@@ -177,6 +177,10 @@ class LSTMLM(nn.Module):
     def __init__(self, conf_dict):
         super(LSTMLM, self).__init__()
 
+        # Used to fit initial phoneme distribution
+        self.init_phoneme_counts = torch.zeros(1, conf_dict["num_classes"])
+        self.init_phoneme_dist = torch.zeros(1, conf_dict["num_classes"])
+
         # Stacked LSTMs
         if "num_layers" in conf_dict.keys():
             self.lstm = nn.LSTM(input_size=conf_dict["num_classes"], hidden_size=conf_dict["num_hidden"],
@@ -188,14 +192,20 @@ class LSTMLM(nn.Module):
 
         self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
 
-    def forward(self, x):
+    def init_state(self, batch_size, hidden_size):
+        h0 = torch.zeros(1, batch_size, hidden_size)
+        c0 = torch.zeros(1, batch_size, hidden_size)
+
+        return h0, c0
+
+    def forward(self, x, prev_state):
         # Pass through LSTM layer
-        h, (_, _) = self.lstm(x)
+        h, state = self.lstm(x, prev_state)
 
         # Pass hidden features to classification layer
         out = F.log_softmax(self.fc(h), dim=2)
 
-        return out
+        return out, state
     
 
 def initialize_weights(m):

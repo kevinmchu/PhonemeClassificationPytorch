@@ -72,6 +72,11 @@ def train(model, optimizer, conf_dict, train_generator):
     # Get device
     device = get_device()
 
+    # Initial states
+    h0, c0 = model.init_state(conf_dict["batch_size"], conf_dict["num_hidden"])
+    h0 = h0.to(device)
+    c0 = c0.to(device)
+
     for _, y_batch, loss_mask in train_generator:        
         optimizer.zero_grad()
 
@@ -81,18 +86,21 @@ def train(model, optimizer, conf_dict, train_generator):
         # Get one-hot encoded vectors
         X_batch = (F.one_hot(y_batch, num_classes=conf_dict["num_classes"])).float()
 
+        # Initial time step will be zeros
+        X_batch = torch.cat((torch.zeros(conf_dict["batch_size"], 1, conf_dict["num_classes"]), X_batch), 1)
+
         # Move to GPU
         X_batch = X_batch.to(device)
         y_batch = y_batch.to(device)
         loss_mask = (torch.from_numpy(loss_mask)).to(device)
 
         # Get outputs
-        train_outputs = model(X_batch[:, 0:-1, :])
+        train_outputs, (_, _) = model(X_batch[:, 0:-1, :], (h0, c0))
         train_outputs = train_outputs.permute(0, 2, 1)
     
         # Calculate loss
         # Note: Loss is set up so model tries to predict next phoneme in the sequence
-        loss = torch.sum(loss_mask[:, 1:] * F.nll_loss(train_outputs, y_batch[:, 1:], reduction='none'))/conf_dict["batch_size"]
+        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))/conf_dict["batch_size"]
 
         # Backpropagate
         loss.backward()
@@ -117,7 +125,6 @@ def validate(model, conf_dict, valid_generator):
     metrics = {}
 
     # Running values
-    running_correct = 0
     num_frames = 0
     running_loss = 0
 
@@ -127,34 +134,51 @@ def validate(model, conf_dict, valid_generator):
     # Evaluation mode
     model.eval()
 
+    # Initial states
+    h0, c0 = model.init_state(conf_dict["batch_size"], conf_dict["num_hidden"])
+    h0 = h0.to(device)
+    c0 = c0.to(device)
+
     with torch.no_grad():
         for _, y_val, loss_mask in valid_generator:
             # Convert to tensor
             y_val = torch.from_numpy(y_val)
-            
+
             # Get one hot encoded vectors
             X_val = (F.one_hot(y_val, num_classes=conf_dict["num_classes"])).float()
+
+            # Initial time step will be all zeros
+            X_val = torch.cat((torch.zeros(conf_dict["batch_size"], 1, conf_dict["num_classes"]), X_val), 1)
             
             # Move to GPU
             X_val = X_val.to(device)
             y_val = y_val.to(device)
             loss_mask = (torch.from_numpy(loss_mask)).to(device)
 
-            # Get outputs and predictions
-            outputs = model(X_val[:, 0:-1, :])
+            # Get outputs
+            outputs, (_, _) = model(X_val[:, 0:-1, :], (h0, c0))
             outputs = outputs.permute(0, 2, 1)
 
-            # Loss mask - only calculate loss over valid region of the utterance (i.e. not padded)
-            running_loss += (torch.sum(loss_mask[:, 1:] * F.nll_loss(outputs, y_val[:, 1:], reduction='none'))).item()
+            # Initial states
+            #h_prev, c_prev = model.init_state(conf_dict["batch_size"], conf_dict["num_hidden"])
+            #y_prev = torch.zeros(conf_dict["batch_size"], 1, conf_dict["num_classes"])
+            #h_prev = h_prev.to(device)
+            #c_prev = c_prev.to(device)
+            #y_prev = y_prev.to(device)
+    
+            # Get outputs and predictions for each time step
+            #outputs = torch.zeros(conf_dict["batch_size"], loss_mask.size()[1], conf_dict["num_classes"], dtype=torch.float32)
+            #for t in range(0, loss_mask.size()[1]):
+            #    y_prev, (h_prev, c_prev) = model(y_prev, (h_prev, c_prev))
+            #    y_prev = (F.one_hot(torch.argmax(y_prev, dim=2), num_classes=conf_dict["num_classes"])).float()
+            #    outputs[:, t, :] = y_prev
+            #outputs = outputs.permute(0, 2, 1)
 
-            # Calculate accuracy
-            matches = (y_val[:, 1:] == torch.argmax(outputs, dim=1))
-            running_correct += (torch.sum(loss_mask[:, 1:] * matches)).item()
-
-            num_frames += (torch.sum(loss_mask[:, 1:])).item()
+            # Calculate running loss and running number of frames
+            running_loss += (torch.sum(loss_mask * F.nll_loss(outputs, y_val, reduction='none'))).item()
+            num_frames += (torch.sum(loss_mask)).item()
 
     # Average loss over all batches
-    metrics['acc'] = running_correct / num_frames
     metrics['loss'] = running_loss / num_frames
 
     return metrics
@@ -276,7 +300,7 @@ def train_and_validate(conf_file, num_models):
         # Training curves
         training_curves = model_dir + "/training_curves"
         with open(training_curves, "w") as file_obj:
-            file_obj.write("Epoch,Validation Accuracy,Validation Loss\n")
+            file_obj.write("Epoch,Validation Loss\n")
 
         logging.info("Training")
 
@@ -288,9 +312,9 @@ def train_and_validate(conf_file, num_models):
         valid_generator = torch.utils.data.DataLoader(valid_set, batch_size=conf_dict["batch_size"],
                                                       num_workers=4, collate_fn=collate_fn, shuffle=True)
 
-        # Used to track maximum accuracy
-        max_acc = 0
-        acc = []
+        # Used to track minimum loss
+        min_loss = float("inf")
+        loss = []
 
         iterator = tqdm(range(conf_dict["num_epochs"]))
 
@@ -304,28 +328,27 @@ def train_and_validate(conf_file, num_models):
 
                 # Validate
                 valid_metrics = validate(model, conf_dict, valid_generator)
-                acc.append(valid_metrics["acc"])
+                loss.append(valid_metrics["loss"])
 
-                file_obj.write("{},{},{}\n".
-                                format(epoch+1, round(valid_metrics['acc'], 3), round(valid_metrics['loss'], 3)))
+                file_obj.write("{},{}\n".format(epoch+1, round(valid_metrics["loss"], 3)))
 
                 # Track the best model and create checkpoint
-                if valid_metrics['acc'] > max_acc:
-                    max_acc = valid_metrics["acc"]
+                if valid_metrics['loss'] < min_loss:
+                    min_loss = valid_metrics["loss"]
                     torch.save({'model': model.state_dict(), 'optimizer': optimizer.state_dict()},
                                model_dir + "/checkpoint.pt")
 
                 # Stop early if accuracy does not improve over last 10 epochs
                 if epoch >= 10:
-                    if acc[-1] - acc[-11] < 0.001:
-                        logging.info("Detected maximum validation accuracy. Stopping early.")
+                    if loss[-1] - loss[-11] >= 0:
+                        logging.info("Detected minimum validation loss. Stopping early.")
                         iterator.close()
                         break
 
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model
