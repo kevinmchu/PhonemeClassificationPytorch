@@ -206,6 +206,38 @@ class LSTMLM(nn.Module):
         out = F.log_softmax(self.fc(h), dim=2)
 
         return out, state
+
+
+class LSTMJoint(nn.Module):
+
+    def __init__(self, conf_dict):
+        super(LSTMJoint, self).__init__()
+
+        # Stacked LSTMs
+        if "num_layers" in conf_dict.keys():
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"]+conf_dict["num_classes"],
+                                hidden_size=conf_dict["num_hidden"], num_layers=conf_dict["num_layers"],
+                                batch_first=True)
+        else:
+            self.lstm = nn.LSTM(input_size=conf_dict["num_features"]+conf_dict["num_classes"],
+                                hidden_size=conf_dict["num_hidden"], batch_first=True)
+
+        self.fc = nn.Linear(conf_dict["num_hidden"], conf_dict["num_classes"])
+
+    def init_state(self, batch_size, hidden_size):
+        h0 = torch.zeros(1, batch_size, hidden_size)
+        c0 = torch.zeros(1, batch_size, hidden_size)
+
+        return h0, c0
+
+    def forward(self, x, prev_state):
+        # Pass through LSTM layer
+        h, state = self.lstm(x, prev_state)
+
+        # Pass hidden features to classification layer
+        out = F.log_softmax(self.fc(h), dim=2)
+
+        return out, state
     
 
 def initialize_weights(m):

@@ -155,6 +155,9 @@ def predict_with_lstmlm(model, le, conf_dict, lm_conf_file, file_list, scale_fil
 
             # Get acoustic model log probabilities
             am_prob = model(x_batch)
+            print(am_prob[0, :, 0])
+            print(am_prob[0, :, 1])
+            print(am_prob[0, :, 2])
 
             # Acoustic model predictions
             am_pred = torch.argmax(am_prob, dim=2)
