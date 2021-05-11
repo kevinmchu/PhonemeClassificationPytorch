@@ -81,24 +81,33 @@ def train(model, optimizer, conf_dict, train_generator, torch_scaler):
         optimizer.zero_grad()
 
         # Phoneme features to represent previous unique phoneme
-        phoneme_trans_idx = np.concatenate((np.array([0]), np.where(np.diff(y_batch))[0] + 1))
-        overall_seq = y_batch[phoneme_trans_idx]
-        X_phn = blah
-        
-        # Convert to tensors
-        X_ac = torch_scaler.transform(torch.from_numpy(X_ac))
-        y_batch = torch.from_numpy(y_batch)
+        X_phn = np.zeros((np.shape(y_batch)[0], np.shape(y_batch)[1]))
+
+        for batch in range(0, conf_dict["batch_size"]):
+            phoneme_trans_idx = np.concatenate((np.array([0]), np.where(np.diff(y_batch[batch, :]))[0] + 1))
+            if len(phoneme_trans_idx) > 1:
+                overall_seq = y_batch[batch, phoneme_trans_idx]
+                X_phn[batch, 0:phoneme_trans_idx[1]] = 0
+                for i in range(1, len(overall_seq)-1):
+                    X_phn[batch, phoneme_trans_idx[i]:phoneme_trans_idx[i+1]] = overall_seq[i-1]
+
+                X_phn[batch, phoneme_trans_idx[i+1]:] = overall_seq[i]
+
+        # Convert to tensors and move to GPU
+        X_ac = (torch.from_numpy(X_ac)).to(device)
+        y_batch = (torch.from_numpy(y_batch)).to(device)
+        loss_mask = (torch.from_numpy(loss_mask)).to(device)
+
+        # Normalize acoustic features
+        X_ac = torch_scaler.transform(X_ac)
 
         # Get one-hot encoded vectors
-        X_phn = (F.one_hot(X_phn, num_classes=conf_dict["num_classes"])).float()
+        X_phn = torch.from_numpy(X_phn)
+        X_phn = (F.one_hot(X_phn.long(), num_classes=conf_dict["num_classes"])).float()
+        X_phn = X_phn.to(device)
 
         # Concatenate acoustic features with phoneme features
         X_batch = torch.cat((X_ac, X_phn), 2)
-
-        # Move to GPU
-        X_batch = X_batch.to(device)
-        y_batch = y_batch.to(device)
-        loss_mask = (torch.from_numpy(loss_mask)).to(device)
 
         # Get outputs
         train_outputs, (_, _) = model(X_batch, (h0, c0))
@@ -142,14 +151,13 @@ def validate(model, conf_dict, valid_generator, torch_scaler):
 
     with torch.no_grad():
         for X_ac, y_val, loss_mask in valid_generator:
-            # Convert to tensors
-            X_ac = torch_scaler.transform(torch.from_numpy(X_ac))
-            y_val = torch.from_numpy(y_val)
-
-            # Move to GPU
-            X_ac = X_ac.to(device)
-            y_val = y_val.to(device)
+            # Convert to tensors and move to GPU
+            X_ac = (torch.from_numpy(X_ac)).to(device)
+            y_val = (torch.from_numpy(y_val)).to(device)
             loss_mask = (torch.from_numpy(loss_mask)).to(device)
+
+            # Normalize acoustic features
+            X_ac = torch_scaler.transform(X_ac)
 
             # Initial states
             h_prev, c_prev = model.init_state(conf_dict["batch_size"], conf_dict["num_hidden"])
@@ -164,18 +172,25 @@ def validate(model, conf_dict, valid_generator, torch_scaler):
 
             # Iterate through sequence
             outputs = torch.zeros(conf_dict["batch_size"], loss_mask.size()[1], conf_dict["num_classes"], dtype=torch.float32)
+            outputs = outputs.to(device)
+            
             for t in range(0, loss_mask.size()[1]):
-                output, (h_prev, c_prev) = model(torch.cat((X_ac[:, t, :], y_prev), 2), (h_prev, c_prev))
+                # Get outputs as well as hidden and cell states
+                output, (h_prev, c_prev) = model(torch.cat((X_ac[:, t, :].unsqueeze(1), y_prev), 2), (h_prev, c_prev))
                 outputs[:, t, :] = output
-                if y_current != (F.one_hot(torch.argmax(output, dim=2), num_classes=conf_dict["num_classes"])).float():
-                    y_prev = y_current
-                    y_current = (F.one_hot(torch.argmax(output, dim=2), num_classes=conf_dict["num_classes"])).float()
+
+                # Reset previous phoneme if phoneme changes
+                if t > 0:
+                    if not torch.all(torch.eq(y_current, (F.one_hot(torch.argmax(output, dim=2), num_classes=conf_dict["num_classes"])).float())):
+                        y_prev = y_current
+                        
+                y_current = (F.one_hot(torch.argmax(output, dim=2), num_classes=conf_dict["num_classes"])).float()
 
             outputs = outputs.permute(0, 2, 1)
 
             # Calculate running correct, loss and running number of frames
             running_loss += (torch.sum(loss_mask * F.nll_loss(outputs, y_val, reduction='none'))).item()
-            running_correct += (torch.sum(loss_mask * (y_val == torch.argmax(outputs, dim=2)))).item()
+            running_correct += (torch.sum(loss_mask * (y_val == torch.argmax(outputs, dim=1)))).item()
             num_frames += (torch.sum(loss_mask)).item()
 
     # Average loss over all batches
@@ -287,8 +302,10 @@ def train_and_validate(conf_file, num_models):
         # Get standard scaler
         device = get_device()
         scaler = fit_normalizer(train_list, conf_dict)
-        with open(model_dir + "/scaler.pickle", 'wb') as f2:
-            pickle.dump(scaler, f2)
+        with open(model_dir.replace("model" + str(i), "model0") + "/scaler.pickle", 'rb') as f:
+            scaler = pickle.load(f)
+        #with open(model_dir + "/scaler.pickle", 'wb') as f2:
+        #    pickle.dump(scaler, f2)
         torch_scaler = TorchStandardScaler(scaler.mean_, scaler.var_, device)
 
         ########## CREATE MODEL ##########
@@ -357,7 +374,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/phoneme/LSTM_joint_sim_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model
