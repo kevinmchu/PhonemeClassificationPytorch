@@ -294,7 +294,7 @@ if __name__ == '__main__':
     # # Inputs
     conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     model_name = "librispeech_rev"
-    test_set = "test_hint_stairway_0_1_3_90"
+    test_set = "test_hint_anechoic"
     lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
     test(conf_file, model_name, test_set, lm_conf_file)

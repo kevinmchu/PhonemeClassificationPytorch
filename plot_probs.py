@@ -1,10 +1,14 @@
+# External
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import torch
+
+# Internal
 from train import read_conf
 from train import get_device
 from evaluate import predict
+from net import get_model_type
 from validation import read_feat_list
 from phone_mapping import get_label_encoder
 from phone_mapping import phone_to_phoneme
@@ -72,15 +76,16 @@ def plot_outputs(y_prob, y_true, y_pred, le):
     return
 
 
-def test(conf_file, model_idx, test_set, feat_type):
+def test(conf_file, model_name, test_set, feat_type, file_idx):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
     Args:
         conf_file (str): txt file containing model info
-        model_idx (int): instance of the model
+        model_name (str): instance of the model
         test_set (str): specifies testing condition
         feat_type (str): mspec or mfcc
+        file_idx (int): index of file to plot
 
     Returns:
         none
@@ -94,9 +99,12 @@ def test(conf_file, model_idx, test_set, feat_type):
     test_feat_list = "data/" + test_set + "/" + feat_type + ".txt"
 
     # Load trained model
-    model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
-                             "model" + str(model_idx))
-    model = torch.load(model_dir + "/model", map_location=torch.device(get_device()))
+    model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""), model_name)
+    model = get_model_type(conf_dict)
+    checkpoint = torch.load(model_dir + "/checkpoint.pt")
+    model.load_state_dict(checkpoint['model'], strict=False)
+    device = get_device()
+    model.to(device)
 
     # Read in list of feature files
     test_list = read_feat_list(test_feat_list)
@@ -107,7 +115,26 @@ def test(conf_file, model_idx, test_set, feat_type):
     # Get predictions
     summary = predict(model, get_label_encoder(conf_dict["label_type"]), conf_dict, test_list, scale_file)
 
-    return summary
+    # This section obtains the softmax probabilities for the true and predicted phonemes
+    le_phoneme = get_label_encoder(conf_dict["label_type"])
+    phoneme_list = get_phoneme_list()
+
+    # Take the first sentence
+    y_true = summary["y_true"][file_idx]
+    y_pred = summary["y_pred"][file_idx]
+    y_prob_phoneme = np.squeeze(summary["y_prob"][file_idx], axis=0)
+
+    # Convert encoded phonemes back into phoenmes
+    y_true = le_phoneme.inverse_transform(y_true)
+    y_pred = le_phoneme.inverse_transform(y_pred)
+
+    write_probs_to_txt(y_true, y_pred, y_prob_phoneme)
+
+    #y_true = le_phoneme.transform(y_true)
+    #y_pred = le_phoneme.transform(y_pred)
+
+    #plot_outputs(y_prob_phoneme, y_true, y_pred, le_phoneme)
+    #plot_outputs(y_prob_phoneme, y_pred, le_phoneme)
 
 
 def abbreviate_moa(label):
@@ -146,36 +173,10 @@ def write_probs_to_txt(y_true, y_pred, y_prob_phoneme):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phone/LSTM_rev_mspec_ci.txt"
-    model_idx = 0
-    test_set = "test_office_0_1_3"
-    feat_type = "mspec_ci"
+    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    model_name = "librispeech_rev"
+    test_set = "test_hint_office_0_1_3"
+    feat_type = "fftspec_ci"
+    file_idx = 106
 
-    summary = test(conf_file, model_idx, test_set, feat_type)
-
-    le_phone = get_label_encoder("phone")
-    le_phoneme = get_label_encoder("moa")
-    phone_list = le_phone.classes_
-    phoneme_list = phone_to_moa(phone_list)
-    phoneme_list = np.array(phoneme_list)
-
-    y_true = summary["y_true"][0]
-    y_pred = summary["y_pred"][0]
-    y_prob_phone = summary["y_prob"][0]
-    y_prob_phoneme = np.zeros((np.shape(y_prob_phone)[0], len(le_phoneme.classes_)))
-
-    for i, phoneme in enumerate(le_phoneme.classes_):
-        idx = np.where(phoneme_list == phoneme)
-        idx = np.reshape(idx, (np.shape(idx)[0]*np.shape(idx)[1]))
-        y_prob_phoneme[:, le_phoneme.transform([phoneme])[0]] = np.sum(y_prob_phone[:, idx], axis=1)
-
-    y_true = phone_to_moa(le_phone.inverse_transform(y_true))
-    y_pred = phone_to_moa(le_phone.inverse_transform(y_pred))
-
-    write_probs_to_txt(y_true, y_pred, y_prob_phoneme)
-
-    #y_true = le_phoneme.transform(y_true)
-    #y_pred = le_phoneme.transform(y_pred)
-
-    #plot_outputs(y_prob_phoneme, y_true, y_pred, le_phoneme)
-    #plot_outputs(y_prob_phoneme, y_pred, le_phoneme)
+    test(conf_file, model_name, test_set, feat_type, file_idx)
