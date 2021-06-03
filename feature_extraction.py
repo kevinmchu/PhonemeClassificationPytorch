@@ -29,6 +29,10 @@ class Dataset(torch.utils.data.Dataset):
         if bool(self.le):
             y = self.le.transform(y).astype('long')
 
+        # Create chunks
+        X = create_chunks(X, self.conf_dict)
+        y = create_chunks_phones(y, self.conf_dict)
+
         return X, y
 
 
@@ -37,23 +41,8 @@ def collate_fn(batch):
     Used to collate multiple files for dataloader
     """
     X_batch, y_batch = zip(*batch)
-    X_batch = list(X_batch)
-    y_batch = list(y_batch)
-
-    # Get maximum sequence length
-    seq_lens = np.array(list(map(lambda a: len(a), y_batch)), dtype='int')
-    max_seq_len = np.max(seq_lens)
-
-    # Pad features with large number and labels with zero
-    for file_idx in range(len(y_batch)):
-        if np.shape(y_batch[file_idx])[0] < max_seq_len:
-            pad_len = max_seq_len - np.shape(y_batch[file_idx])[0]
-            X_batch[file_idx] = np.concatenate((X_batch[file_idx], 1000*np.ones((pad_len, np.shape(X_batch[file_idx])[1]), dtype='float32')), axis=0)
-            y_batch[file_idx] = np.concatenate((y_batch[file_idx], np.zeros((pad_len,), dtype='long')), axis=0)
-
-    # Convert to np.array
-    X_batch = np.array(X_batch)
-    y_batch = np.array(y_batch)
+    X_batch = np.vstack(list(X_batch))
+    y_batch = np.vstack(list(y_batch))
 
     # T-F bins that are not padded, used to calculate loss
     non_padded = np.prod(X_batch != 1000, axis=2)
@@ -257,3 +246,52 @@ def splice(X, conf_dict):
         X = X.reshape(np.shape(X)[0], conf_dict["num_features"])
 
     return X
+
+
+def create_chunks(X, conf_dict):
+    """                                                                                           
+    This function splits utterances into chunks. The purpose                                      
+    of this is two-fold: to overcome the problem of training                                      
+    RNNs using long sequences and problems related to memory.                                     
+                                                                                                  
+    Args:                                                                                         
+        X (np.array): (seq_len x n_feats) matrix of features                                      
+        across time steps                                                              
+        conf_dict (dict): dictionary with configuration parameters                                
+                                                                                                  
+    Returns:                                                                                      
+        X (np.array): (n_chunks x seq_len_new x n_feats) matrix                                   
+        of chunked features
+    """
+    # Pad                                                                                         
+    if (np.shape(X)[0] % conf_dict["chunk_len"]):
+        pad_len = conf_dict["chunk_len"] - (np.shape(X)[0] % conf_dict["chunk_len"])
+        X = np.concatenate((X, 1000*np.ones((pad_len, np.shape(X)[1]), dtype='float32')), axis=0)
+
+    # Create chunks                                                                               
+    X = X.reshape((-1, conf_dict["chunk_len"], np.shape(X)[1]))
+
+    return X
+
+
+def create_chunks_phones(p, conf_dict):
+    """                                                                                           
+    Same as create_chunks, but for phones                                                         
+                                                                                                  
+    Args:                                                                                         
+        p (np.array): (seq_len) array of phones across time steps                                 
+        conf_dict (dict): dictionary with configuration parameters                                
+                                                                                                  
+    Returns:                                                                                      
+        p (np.array): (n_chunks x seq_len_new) matrix of chunked                                  
+        phones                                                                                    
+    """
+    # Pad                                                                                         
+    if (np.shape(p)[0] % conf_dict["chunk_len"]):
+        pad_len = conf_dict["chunk_len"] - (np.shape(p)[0] % conf_dict["chunk_len"])
+        p = np.concatenate((p, np.zeros((pad_len,), dtype='long')), axis=0)
+
+    # Create chunks                                                                               
+    p = p.reshape((-1, conf_dict["chunk_len"]))
+
+    return p
