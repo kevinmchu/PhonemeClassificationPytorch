@@ -87,7 +87,7 @@ def train(model, optimizer, le, conf_dict, train_generator, torch_scaler):
         # Calculate loss
         # Note: NLL loss actually calculates cross entropy loss when given values
         # transformed by log softmax
-        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))/conf_dict["batch_size"]
+        loss = torch.sum(loss_mask * F.nll_loss(train_outputs, y_batch, reduction='none'))/X_batch.size()[0]
 
         # Backpropagate
         loss.backward()
@@ -167,7 +167,7 @@ def convert_string(key, value):
 
     try:
         # Ints
-        if "num" in key or "size" in key:
+        if "num" in key or "size" in key or "len" in key:
             converted_value = int(value)
         # Floats
         else:
@@ -333,7 +333,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/moa/LSTM_sim_rev_fftspec_ci_optim_batch.txt"
     num_models = 1
 
     # Train and validate model

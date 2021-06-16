@@ -69,6 +69,18 @@ def get_bpg_list():
     return bpg
 
 
+def get_vuv_list():
+    """ Returns voiced/unvoiced group list
+
+    Returns:
+        vuv (list): list of voiced/unvoiced groups plus silence
+
+    """
+    vuv = ["voiced", "unvoiced", "silence"]
+
+    return vuv
+    
+
 def get_label_encoder(label_type):
     """ Get label encoder
 
@@ -87,6 +99,8 @@ def get_label_encoder(label_type):
         labels = get_moa_list()
     elif label_type == "bpg":
         labels = get_bpg_list()
+    elif label_type == "vuv":
+        labels = get_vuv_list()
 
     le = preprocessing.LabelEncoder()
     le.fit(labels)
@@ -194,3 +208,36 @@ def phone_to_bpg(phones):
         bpg.append(phone_dict[phone])
 
     return bpg
+
+
+def phone_to_vuv(phones):
+    """
+    This function converts a list of phones into voiced/unvoiced/silence
+
+    Args:
+        phones (list): list of phones to convert
+
+    Returns:
+        vuv (list): list of phones converted to voiced/unvoiced/silence
+    """
+
+    # Phone to bpg mapping
+    file = "phones/phone_to_vuv.txt"
+
+    # Open
+    file_obj = open(file, "r")
+    x = file_obj.readlines()
+    file_obj.close()
+
+    # Creates a dictionary where keys are phonemes and values of bpg
+    phone_dict = {}
+    for i in range(0, len(x)):
+        temp = x[i].split()
+        phone_dict[temp[0]] = temp[1]
+
+    # Converts phonemes to manner of articulation
+    bpg = []
+    for phone in phones:
+        vuv.append(phone_dict[phone])
+
+    return vuv

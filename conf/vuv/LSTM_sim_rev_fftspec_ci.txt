@@ -2,7 +2,7 @@
 model_type = LSTM
 bidirectional = False
 num_hidden = 123
-num_classes = 7
+num_classes = 3
 
 [Training]
 batch_size = 1
@@ -10,7 +10,7 @@ chunk_len = 1000
 num_epochs = 250
 learning_rate = 1e-5
 momentum = 0.9
-label_type = moa
+label_type = vuv
 optimizer = sgd
 
 [Datasets]
