@@ -45,6 +45,17 @@ def get_phoneme_list():
     return phonemes
 
 
+def get_moavuv_list():
+    """ Returns voiced and unvoiced manner of articulation list                                     
+                                                                                                    
+    Returns:                                                                                        
+        moa_vuv (list): list of v/uv moas plus silence                                              
+    """
+    moa_vuv = ["silence", "stop_uv", "stop_v", "affricate_uv", "affricate_v", "fricative_uv", "fricative_v","nasal", "semivowel", "vowel"]
+
+    return moa_vuv
+
+
 def get_moa_list():
     """ Returns manner of articulation list
 
@@ -101,6 +112,8 @@ def get_label_encoder(label_type):
         labels = get_bpg_list()
     elif label_type == "vuv":
         labels = get_vuv_list()
+    elif label_type == "moa_vuv":
+        labels = get_moavuv_list()
 
     le = preprocessing.LabelEncoder()
     le.fit(labels)
@@ -144,100 +157,41 @@ def phone_to_phoneme(phones, num_phonemes):
     return phonemes
 
 
-def phone_to_moa(phones):
+def map_phones(phones, label_type):
     """
-    This function converts a list of phones into their manner of articulation
-    
+    This function maps phones to reduced sets (other than phoneme)
+
     Args:
         phones (list): list of phones to convert
-        
+
     Returns:
-        moa (list): list of phones converted to manner of articulation
+        mapped_phones (list): list of phones mapped to reduced sets
     """
-    
+    # Select appropriate mapping file
     # Phone to manner of articulation mapping as defined by TIMIT docs
-    file = "phones/phone_to_moa_timit.txt"
+    if label_type == "moa":
+        file = "phones/phone_to_moa_timit.txt"
+    elif label_type == "bpg":
+        file = "phones/phone_to_bpg_timit.txt"
+    elif label_type == "vuv":
+        file = "phones/phone_to_vuv.txt"
+    elif label_type == "moa_vuv":
+        file = "phones/phone_to_moa_vuv_timit2.txt"
     
     # Open
     file_obj = open(file, "r")
     x = file_obj.readlines()
     file_obj.close()
     
-    # Creates a dictionary where keys are phonemes and values of moa
+    # Creates a dictionary where keys are phonemes and values of mapped phones
     phone_dict = {}
     for i in range(0, len(x)):
         temp = x[i].split()
         phone_dict[temp[0]] = temp[1]
 
     # Converts phonemes to manner of articulation
-    moa = []
+    mapped_phones = []
     for phone in phones:
-        moa.append(phone_dict[phone])
+        mapped_phones.append(phone_dict[phone])
     
-    return moa
-
-
-def phone_to_bpg(phones):
-    """
-    This function converts a list of phones into their broad phonetic group (bpg)
-
-    Args:
-        phones (list): list of phones to convert
-
-    Returns:
-        bpg (list): list of phones converted to broad phonetic group
-    """
-
-    # Phone to bpg mapping
-    file = "phones/phone_to_bpg_timit.txt"
-
-    # Open
-    file_obj = open(file, "r")
-    x = file_obj.readlines()
-    file_obj.close()
-
-    # Creates a dictionary where keys are phonemes and values of bpg
-    phone_dict = {}
-    for i in range(0, len(x)):
-        temp = x[i].split()
-        phone_dict[temp[0]] = temp[1]
-
-    # Converts phonemes to manner of articulation
-    bpg = []
-    for phone in phones:
-        bpg.append(phone_dict[phone])
-
-    return bpg
-
-
-def phone_to_vuv(phones):
-    """
-    This function converts a list of phones into voiced/unvoiced/silence
-
-    Args:
-        phones (list): list of phones to convert
-
-    Returns:
-        vuv (list): list of phones converted to voiced/unvoiced/silence
-    """
-
-    # Phone to bpg mapping
-    file = "phones/phone_to_vuv.txt"
-
-    # Open
-    file_obj = open(file, "r")
-    x = file_obj.readlines()
-    file_obj.close()
-
-    # Creates a dictionary where keys are phonemes and values of bpg
-    phone_dict = {}
-    for i in range(0, len(x)):
-        temp = x[i].split()
-        phone_dict[temp[0]] = temp[1]
-
-    # Converts phonemes to manner of articulation
-    bpg = []
-    for phone in phones:
-        vuv.append(phone_dict[phone])
-
-    return vuv
+    return mapped_phones

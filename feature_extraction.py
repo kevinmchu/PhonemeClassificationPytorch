@@ -8,8 +8,7 @@ from scipy import signal
 import torch
 
 from phone_mapping import phone_to_phoneme
-from phone_mapping import phone_to_moa
-from phone_mapping import phone_to_bpg
+from phone_mapping import map_phones
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -185,17 +184,9 @@ def read_feat_file(filename, conf_dict):
         y = phone_to_phoneme(y, 39)
         y = np.array(y, dtype='object')
 
-    elif conf_dict["label_type"] == 'moa':
-        y = phone_to_moa(y)
+    else:
+        y = map_phones(y, conf_dict["label_type"])
         y = np.array(y, dtype='object')
-
-    elif conf_dict["label_type"] == 'bpg':
-        y = phone_to_bpg(y)
-        y = np.array(y, dtype='object')
-
-    elif conf_dict["label_type"] == 'vuv':
-        y = phone_to_vuv(y)
-        y = np.array(Y, dtype='object')
     
     return X, y
 
