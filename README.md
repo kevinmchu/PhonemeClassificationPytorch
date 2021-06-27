@@ -1,7 +1,7 @@
 # PhonemeClassificationPytorch
 
 ## About
-This repository contains code develop framewie phone classification models, which predict phones for each time step of the input. The neural networks are implemented using PyTorch, and the features are currently calculated using MATLAB.
+This repository contains code develop framewise phone classification models, which predict phones for each time step of the input. The neural networks are implemented using PyTorch, and the features are currently calculated using MATLAB.
 
 ## Overview of Toolkit
 This repository contains code to train, validate, and test neural network models on phone classification tasks. The script trains models on a user-specified number of epochs and performs weight updates after each full pass through the training data. 
