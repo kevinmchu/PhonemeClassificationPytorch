@@ -1,4 +1,4 @@
-% featureExtraction.m
+% extractFeaturesTestingData.m
 % Author: Kevin Chu
 % Last Modified: 02/23/2021
 %
@@ -6,21 +6,16 @@
 
 clear; close all; clc;
 
+%nucleus_dir: directory containing Nucleus MATLAB Toolbox
+addpath(genpath(nucleus_dir));
+
 %% USER-DEFINED INPUTS
 % Necessary directories
-timit_dir = '/media/batcave/personal/chu.kevin/Sentences/TIMIT_norm';
-rir_dir = '/media/batcave/personal/chu.kevin/RIRs/Recorded RIRs/AIRDatabase/AIR_1_4/binaural';
-feat_dir = '/media/batcave/personal/chu.kevin/TitanV/PhonemeClassificationPytorch/features';
+%timit_dir: directory containing TIMIT entences
+%feat_dir: directory where features should be saved
+%rir_dir: directory containing RIRs
 
 % Feature extraction parameters
-% feat_type = 'mspec';
-% fs = 16000; % Hz
-% frame_len = 0.025; % s
-% frame_shift = 0.010; % s
-% window_type = 'hann';
-% num_coeffs = 22;
-% use_energy = false;
-
 feat_type = 'fftspec_ci';
 fs = 16000; % Hz
 frame_len = 0.008; % s

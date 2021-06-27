@@ -1,6 +1,7 @@
 data
 exp
-features/rastaPlp.m
+feature_extraction/extractFeatures.m
+feature_extraction/rastaPlp.m
 lm
 .idea
 .ipynb_checkpoints
