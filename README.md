@@ -27,38 +27,38 @@ The repository currently supports the following neural network architectures:
 ### Configuration Files
 The conf directory contains various configuration files that allow the user to define the model hyperparameters and the datasets used to develop the models. Here is an example of a conf file to train an LSTM.
 
-[Architecture]
-model_type = LSTM
-bidirectional = False
-num_hidden = 123
-num_classes = 39
+[Architecture]<br/>
+model_type = LSTM<br/>
+bidirectional = False<br/>
+num_hidden = 123<br/>
+num_classes = 39<br/>
 
-[Training]
-batch_size = 1
-num_epochs = 250
-learning_rate = 1e-5
-momentum = 0.9
-label_type = phoneme
-optimizer = sgd
+[Training]<br/>
+batch_size = 1<br/>
+num_epochs = 250<br/>
+learning_rate = 1e-5<br/>
+momentum = 0.9<br/>
+label_type = phoneme<br/>
+optimizer = sgd<br/>
 
-[Datasets]
-training = data/train_librispeech_sim_rev/log_fft.txt
-development = data/dev_librispeech_sim_rev/log_fft.txt
+[Datasets]<br/>
+training = data/train_librispeech_sim_rev/log_fft.txt<br/>
+development = data/dev_librispeech_sim_rev/log_fft.txt<br/>
 
-[Features]
-feature_type = fftspec_ci
-num_coeffs = 65
-use_energy = False
-deltas = False
-deltaDeltas = False
+[Features]<br/>
+feature_type = fftspec_ci<br/>
+num_coeffs = 65<br/>
+use_energy = False<br/>
+deltas = False<br/>
+deltaDeltas = False<br/>
 
-The Architecture section contains detail regarding the model type, whether the model is unidirectional or bidirectional (for RNNs), and the hyperparameters of the model.
+The **Architecture** section contains detail regarding the model type, whether the model is unidirectional or bidirectional (for RNNs), and the hyperparameters of the model.
 
-The Training section contains detail regarding the batch size, maximum number of epochs, learning rate, momentum, classification task, and optimizer.
+The **Training** section contains detail regarding the batch size, maximum number of epochs, learning rate, momentum, classification task, and optimizer.
 
-The Datasets section contains the file paths to .txt files that contain lists of feature files.
+The **Datasets** section contains the file paths to .txt files that contain lists of feature files.
 
-The Features section contains metadata about the features used to train and test the models.
+The **Features** section contains metadata about the features used to train and test the models.
 
 ### Relevant Modules
 * `train.py`: trains a model to perform one of the specified classification tasks
