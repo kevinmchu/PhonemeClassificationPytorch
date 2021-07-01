@@ -35,35 +35,6 @@ class Dataset(torch.utils.data.Dataset):
         return X, y
 
 
-#def collate_fn(batch):
-#    """
-#    Used to collate multiple files for dataloader
-#    """
-#    X_batch, y_batch = zip(*batch)
-#    X_batch = list(X_batch)
-#    y_batch = list(y_batch)
-#
-#    # Get maximum sequence length
-#    seq_lens = np.array(list(map(lambda a: len(a), y_batch)), dtype='int')
-#    max_seq_len = np.max(seq_lens)
-#
-#    # Pad features with large number and labels with zero
-#    for file_idx in range(len(y_batch)):
-#        if np.shape(y_batch[file_idx])[0] < max_seq_len:
-#            pad_len = max_seq_len - np.shape(y_batch[file_idx])[0]
-#            X_batch[file_idx] = np.concatenate((X_batch[file_idx], 1000*np.ones((pad_len, np.shape(X_batch[file_idx])[1]), dtype='float32')), axis=0)
-#            y_batch[file_idx] = np.concatenate((y_batch[file_idx], np.zeros((pad_len,), dtype='long')), axis=0)
-#
-#    # Convert to np.array
-#    X_batch = np.array(X_batch)
-#    y_batch = np.array(y_batch)
-#
-#    # T-F bins that are not padded, used to calculate loss
-#    non_padded = np.prod(X_batch != 1000, axis=2)
-#
-#    return X_batch, y_batch, non_padded
-    
-
 def collate_fn(batch):
     """
     Used to collate multiple files for dataloader
@@ -129,6 +100,18 @@ def fit_normalizer(file_list, conf_dict):
         scaler.partial_fit(X_batch[np.where(np.prod(X_batch != np.inf, axis=1))])
 
     return scaler
+
+
+def read_feat_list(feat_list_file):
+    # Read in file list                                                                         
+    file_obj = open(feat_list_file, "r")
+    file_list = file_obj.readlines()
+    file_obj.close()
+
+    # Remove newline characters                                                                 
+    file_list = list(map(lambda x: x.replace("\n",""), file_list))
+
+    return file_list
     
 
 def read_feat_file(filename, conf_dict):

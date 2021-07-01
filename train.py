@@ -19,7 +19,7 @@ from phone_mapping import get_label_encoder
 from phone_mapping import get_moa_list
 
 # Training and testing data
-from validation import read_feat_list
+from file_loader import read_feat_list
 
 # PyTorch
 import torch

@@ -5,7 +5,7 @@ from file_loader import read_feat_file
 import numpy as np
 from train import read_conf
 import os
-from validation import read_feat_list
+from file_loader import read_feat_list
 from pathlib import Path
 import logging
 from net import get_model_type

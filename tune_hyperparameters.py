@@ -7,7 +7,7 @@ from file_loader import fit_normalizer
 from phone_mapping import get_label_encoder
 
 # Training and testing data
-from validation import read_feat_list
+from file_loader import read_feat_list
 
 # PyTorch
 import torch.optim as optim

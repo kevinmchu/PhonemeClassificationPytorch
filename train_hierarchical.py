@@ -19,7 +19,7 @@ from phone_mapping import phone_to_moa
 from phone_mapping import phone_to_bpg
 
 # Training and testing data
-from validation import read_feat_list
+from file_loader import read_feat_list
 import evaluate
 
 # PyTorch

@@ -5,7 +5,7 @@ import collections
 
 # Internal
 from file_loader import read_feat_file
-from validation import read_feat_list
+from file_loader import read_feat_list
 from phone_mapping import get_label_encoder
 from train import read_conf
 
