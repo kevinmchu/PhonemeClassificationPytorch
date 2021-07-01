@@ -126,23 +126,27 @@ def read_feat_file(filename, conf_dict):
         X (np.array): matrix of features
         y (list): list of phoneme labels
     """
+    # Load npz file containing features and phones
+    data = np.load(filename.replace(".txt", ".npz"))
+    X = data["feats"]
+    y = data["phones"]
     
     # If disconnected, keep trying to read from file
-    io_flag = True
-    while io_flag:
-        try:
-            # Read in features and labels as a string
-            file_obj = open(filename, "r")
-            x = file_obj.readlines()
-            file_obj.close()
-            io_flag = False
-        except:
-            continue
+    #io_flag = True
+    #while io_flag:
+    #    try:
+    #        # Read in features and labels as a string
+    #        file_obj = open(filename, "r")
+    #        x = file_obj.readlines()
+    #        file_obj.close()
+    #        io_flag = False
+    #    except:
+    #        continue
     
     # Extract features and labels
-    featsAndLabs = list(map(lambda a: a.split(), x))
-    X = np.array(list(map(lambda a: a[0:conf_dict["num_coeffs"]], featsAndLabs)), dtype='float32')
-    y = list(map(lambda a: a[-1], featsAndLabs))
+    #featsAndLabs = list(map(lambda a: a.split(), x))
+    #X = np.array(list(map(lambda a: a[0:conf_dict["num_coeffs"]], featsAndLabs)), dtype='float32')
+    #y = list(map(lambda a: a[-1], featsAndLabs))
 
     # Train on speech enhanced using irm, if applicable
     if "train_condition" in conf_dict.keys():

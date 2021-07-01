@@ -9,7 +9,7 @@ from train import read_conf
 from train import get_device
 from evaluate import predict
 from net import get_model_type
-from validation import read_feat_list
+from file_loader import read_feat_list
 from phone_mapping import get_label_encoder
 from phone_mapping import phone_to_phoneme
 from phone_mapping import phone_to_moa
