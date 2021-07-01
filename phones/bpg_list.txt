@@ -1,0 +1,5 @@
+silence
+stop
+fricative
+nasal
+vowel

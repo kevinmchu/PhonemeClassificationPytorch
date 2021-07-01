@@ -1,0 +1,7 @@
+silence
+stop
+affricate
+fricative
+nasal
+semivowel
+vowel

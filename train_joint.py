@@ -19,7 +19,6 @@ from sklearn import preprocessing
 
 # Labels
 from phone_mapping import get_label_encoder
-from phone_mapping import get_moa_list
 from phone_mapping import phone_to_moa
 
 # Training and testing data

@@ -16,7 +16,6 @@ from performance_metrics import get_performance_metrics
 
 # Labels
 from phone_mapping import get_label_encoder
-from phone_mapping import phone_to_moa
 
 # PyTorch
 import torch

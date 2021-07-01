@@ -1,96 +1,34 @@
-# phoneMapping.py
-# Author: Kevin Chu
-# Last Modified: 07/27/2020
-
 from sklearn import preprocessing
 
 
-def get_phone_list():
-    """ Returns phone list
+def get_label_list(label_type):
+    """ Get list of phonetic labels.
+
+    Args:
+        label_type (str): type of label to encode
 
     Returns:
-        phones (list): list of phones organized by manner of articulation
-
+        label_list (list): list of phonetic labels
     """
-    phones = ["pau", "epi", "h#", "pcl", "bcl", "tcl", "dcl", "kcl", "gcl",
-              "p", "b", "t", "d", "k", "g", "dx", "q",
-              "ch", "jh",
-              "s", "z", "sh", "zh", "f", "v", "th", "dh",
-              "m", "em", "n", "en", "nx", "ng", "eng",
-              "l", "el", "r", "w", "y", "hh", "hv",
-              "iy", "ih", "eh", "ey", "ae", "aa", "aw", "ay", "ah", "ao", "oy", "ow", "uh", "uw", "ux", "er", "ax", "ix", "axr", "ax-h"]
+    # Select file containing label list
+    if label_type == "phone":
+        label_file = "phones/phone_list.txt"
+    elif label_type == "phoneme":
+        label_file = "phones/phoneme_list.txt"
+    elif label_type == "moa":
+        label_file = "phones/moa_list.txt"
+    elif label_type == "bpg":
+        label_file = "phones/bpg_list.txt"
+    elif label_type == "vuv":
+        label_file = "phones/vuv_list.txt"
+    elif label_type == "moa_vuv":
+        label_file = "phones/moavuv_list.txt"
 
-    return phones
+    with open(label_file, 'r') as f:
+        label_list = f.readlines().split('\n')
 
+    return label_list
 
-def get_phoneme_list():
-    """ Returns phoneme list
-
-    Returns:
-        phonemes (list): list of phonemes organized by manner of articulation
-
-    """
-    # Phoneme definitions according to Lee and Hon, 1989*
-    # Note:
-    # Lee and Hon (1989) consider 'zh' to be 'sh'
-    # *Instead of removing the glottal stop q, it has been mapped to silence
-    phonemes = ["sil",
-                "p", "b", "t", "d", "k", "g", "dx",
-                "ch", "jh",
-                "s", "z", "sh", "f", "v", "th", "dh",
-                "m", "n", "ng",
-                "l", "r", "w", "y", "hh",
-                "aa", "ae", "ah", "aw", "ay", "eh", "er", "ey", "ih", "iy", "ow", "oy", "uh", "uw"]
-
-    return phonemes
-
-
-def get_moavuv_list():
-    """ Returns voiced and unvoiced manner of articulation list                                     
-                                                                                                    
-    Returns:                                                                                        
-        moa_vuv (list): list of v/uv moas plus silence                                              
-    """
-    moa_vuv = ["silence", "stop_uv", "stop_v", "affricate_uv", "affricate_v", "fricative_uv", "fricative_v","nasal", "semivowel", "vowel"]
-
-    return moa_vuv
-
-
-def get_moa_list():
-    """ Returns manner of articulation list
-
-    Returns:
-        moa (list): list of the manners of articulation plus silence
-
-    """
-    moa = ["silence", "stop", "affricate", "fricative", "nasal", "semivowel", "vowel"]
-
-    return moa
-
-
-def get_bpg_list():
-    """ Returns broad phonetic group list
-
-    Returns:
-        bpg (list): list of broad phonetic groups plus silence
-
-    """
-    bpg = ["silence", "stop", "fricative", "nasal", "vowel"]
-
-    return bpg
-
-
-def get_vuv_list():
-    """ Returns voiced/unvoiced group list
-
-    Returns:
-        vuv (list): list of voiced/unvoiced groups plus silence
-
-    """
-    vuv = ["voiced", "unvoiced", "silence"]
-
-    return vuv
-    
 
 def get_label_encoder(label_type):
     """ Get label encoder
@@ -102,21 +40,12 @@ def get_label_encoder(label_type):
         le (preprocessing.LabelEncoder): label encoder
 
     """
-    if label_type == "phone":
-        labels = get_phone_list()
-    elif label_type == "phoneme":
-        labels = get_phoneme_list()
-    elif label_type == "moa":
-        labels = get_moa_list()
-    elif label_type == "bpg":
-        labels = get_bpg_list()
-    elif label_type == "vuv":
-        labels = get_vuv_list()
-    elif label_type == "moa_vuv":
-        labels = get_moavuv_list()
+    # Get list of labels
+    label_list = get_label_list(label_type)
 
+    # Get label encoder
     le = preprocessing.LabelEncoder()
-    le.fit(labels)
+    le.fit(label_list)
 
     return le
 

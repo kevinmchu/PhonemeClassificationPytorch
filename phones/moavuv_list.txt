@@ -1,0 +1,10 @@
+silence
+stop_uv
+stop_v
+affricate_uv
+affricate_v
+fricative_uv
+fricative_v
+nasal
+semivowel
+vowel

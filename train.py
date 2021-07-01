@@ -19,7 +19,6 @@ from sklearn import preprocessing
 
 # Labels
 from phone_mapping import get_label_encoder
-from phone_mapping import get_moa_list
 
 # Training and testing data
 from file_loader import read_feat_list
@@ -272,7 +271,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/moa_vuv/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model

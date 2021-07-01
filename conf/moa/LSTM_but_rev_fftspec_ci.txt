@@ -14,7 +14,7 @@ label_type = moa
 optimizer = sgd
 
 [Datasets]
-training = data/train_librispeech_but_rev/log_fft.txt
+training = data/train_librispeech_but_rev_8k/log_fft.txt
 development = data/dev_librispeech_but_rev/log_fft.txt
 
 [Features]
