@@ -1,7 +1,7 @@
 from train import get_device
 import pickle
 from tqdm import tqdm
-from feature_extraction import read_feat_file
+from file_loader import read_feat_file
 import numpy as np
 from train import read_conf
 import os

@@ -1,7 +1,7 @@
 import numpy as np
 
 # Features
-from feature_extraction import fit_normalizer
+from file_loader import fit_normalizer
 
 # Labels
 from phone_mapping import get_label_encoder

@@ -7,11 +7,11 @@ from pathlib import Path
 from datetime import datetime
 
 # Features
-from feature_extraction import collate_fn
-from feature_extraction import Dataset
-from feature_extraction import fit_normalizer
-from feature_extraction import read_feat_file
-from feature_extraction import TorchStandardScaler
+from file_loader import collate_fn
+from file_loader import Dataset
+from file_loader import fit_normalizer
+from file_loader import read_feat_file
+from file_loader import TorchStandardScaler
 from sklearn import preprocessing
 
 # Labels
