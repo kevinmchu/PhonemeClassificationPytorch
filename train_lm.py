@@ -186,41 +186,6 @@ def validate(model, conf_dict, valid_generator):
     return metrics
 
 
-def convert_string(key, value):
-    """ Convert string into appropriate data type based on the
-    dictionary key
-
-    Args:
-        key (str): dictionary key
-        value (str): value expressed as a string
-
-    Returns:
-        converted_value (varies): value converted into appropriate data type
-
-    """
-
-    try:
-        # Ints
-        if "num" in key or "size" in key:
-            converted_value = int(value)
-        # Floats
-        else:
-            converted_value = float(value)
-    except ValueError:
-        # Tuple
-        if re.match("\(\d*,\d*\)", value):
-            temp = re.sub("\(|\)", "", value).split(",")
-            converted_value = (int(temp[0]), int(temp[1]))
-        # Boolean
-        elif value == "True" or value == "False":
-            converted_value = value == "True"
-        # String
-        else:
-            converted_value = value
-
-    return converted_value
-
-
 def train_and_validate(conf_file, num_models):
     """ Train and evaluate a phoneme classification model
 

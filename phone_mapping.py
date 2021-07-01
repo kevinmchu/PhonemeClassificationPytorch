@@ -25,7 +25,9 @@ def get_label_list(label_type):
         label_file = "phones/moavuv_list.txt"
 
     with open(label_file, 'r') as f:
-        label_list = f.readlines().split('\n')
+        label_list = f.readlines()
+        for i in range(len(label_list)):
+            label_list[i] = label_list[i].replace("\n", "")
 
     return label_list
 

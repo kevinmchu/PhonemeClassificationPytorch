@@ -1,0 +1,24 @@
+[Architecture]
+model_type = LSTM
+bidirectional = False
+num_hidden = 123
+num_classes = 39
+
+[Training]
+batch_size = 1
+num_epochs = 250
+learning_rate = 1e-5
+momentum = 0.9
+label_type = phoneme
+optimizer = sgd
+
+[Datasets]
+training = data/train_librispeech_but_rev_8k/log_fft.txt
+development = data/dev_librispeech_but_rev/log_fft.txt
+
+[Features]
+feature_type = fftspec_ci
+num_coeffs = 65
+use_energy = False
+deltas = False
+deltaDeltas = False
