@@ -5,7 +5,7 @@ import os
 import torch
 
 # Internal
-from train import read_conf
+from conf import read_conf
 from train import get_device
 from evaluate import predict
 from net import get_model_type

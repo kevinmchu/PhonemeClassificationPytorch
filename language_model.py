@@ -7,7 +7,7 @@ import collections
 from file_loader import read_feat_file
 from file_loader import read_feat_list
 from phone_mapping import get_label_encoder
-from train import read_conf
+from conf import read_conf
 
 def unigram(conf_dict):
     """ Generates unigram language model

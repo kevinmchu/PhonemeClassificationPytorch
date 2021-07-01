@@ -21,8 +21,8 @@ import logging
 from train import get_device
 from train import train
 from train import validate
-from train import read_conf
-from train import convert_string
+from conf import read_conf
+from conf import convert_string
 
 
 def read_hyperparams(hyperparams_file):

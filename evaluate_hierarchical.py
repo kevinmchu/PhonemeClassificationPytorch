@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 from file_loader import read_feat_file
 import numpy as np
-from train import read_conf
+from conf import read_conf
 import os
 from file_loader import read_feat_list
 from pathlib import Path
