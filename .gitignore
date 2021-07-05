@@ -3,6 +3,7 @@ exp
 feature_extraction/extractFeatures.m
 feature_extraction/rastaPlp.m
 lm
+rnnlm
 .idea
 .ipynb_checkpoints
 __pycache__
