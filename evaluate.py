@@ -291,12 +291,12 @@ def save_decoding(summary, test_set, le, decode_dir):
 
 if __name__ == '__main__':
     # # Inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
-    model_name = "librispeech_rev"
-    test_set = "test_hint_anechoic"
-    lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
+    model_name = "model0"
+    test_set = "test_hint_aula_carolina_0_1_4_90_3"
+    #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
-    test(conf_file, model_name, test_set, lm_conf_file)
+    test(conf_file, model_name, test_set)#, lm_conf_file)
 
     #conf_dir = "conf/phone"
     #conf_files = ["conf/phone/LSTM_rev_mspec.txt"]

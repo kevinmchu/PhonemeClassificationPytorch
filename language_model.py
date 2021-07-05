@@ -96,12 +96,12 @@ def bigram(conf_dict):
         for key in lm_dict.keys():
             lm_dict[key] = np.log(lm_dict[key]/num_seq)
 
-        return lm_dict
+    return lm_dict
 
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
     lm_type = "unigram"
 
     # Read in conf file

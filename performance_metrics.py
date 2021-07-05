@@ -5,12 +5,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from phone_mapping import phone_to_phoneme
-from phone_mapping import phone_to_moa
-from phone_mapping import phone_to_bpg
+from phone_mapping import map_phones
 from phone_mapping import get_label_encoder
-from phone_mapping import get_phone_list
-from phone_mapping import get_phoneme_list
-from phone_mapping import get_moa_list
+from phone_mapping import get_label_list
 from sklearn.metrics import confusion_matrix
 from sklearn import preprocessing
 
@@ -66,7 +63,7 @@ def plot_phoneme_confusion_matrix(y_true, y_pred, le, label_type, decode_dir, bp
 	le_phoneme = preprocessing.LabelEncoder()
 	phoneme_true = le_phoneme.fit_transform(phoneme_true)
 	phoneme_pred = le_phoneme.transform(phoneme_pred)
-	plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, label_type, get_phoneme_list(), decode_dir, bpg_type)
+	plot_confusion_matrix(phoneme_true, phoneme_pred, le_phoneme, label_type, get_label_list("phoneme"), decode_dir, bpg_type)
 
 
 def plot_moa_confusion_matrix(y_true, y_pred, le, label_type, decode_dir, bpg_type):
@@ -81,12 +78,12 @@ def plot_moa_confusion_matrix(y_true, y_pred, le, label_type, decode_dir, bpg_ty
 		none
 
 	"""
-	moa_true = phone_to_moa(le.inverse_transform(y_true))
-	moa_pred = phone_to_moa(le.inverse_transform(y_pred))
+	moa_true = map_phones(le.inverse_transform(y_true), "moa")
+	moa_pred = map_phones(le.inverse_transform(y_pred), "moa")
 	le_moa = preprocessing.LabelEncoder()
 	moa_true = le_moa.fit_transform(moa_true)
 	moa_pred = le_moa.transform(moa_pred)
-	plot_confusion_matrix(moa_true, moa_pred, le_moa, label_type, get_moa_list(), decode_dir, bpg_type)
+	plot_confusion_matrix(moa_true, moa_pred, le_moa, label_type, get_label_list("moa"), decode_dir, bpg_type)
 
 
 def write_confmat(cm, classes, decode_dir, label_type):
@@ -150,10 +147,11 @@ def plot_confusion_matrix(y_true, y_pred, le, label_type, sort_order, decode_dir
 	# Accuracy conditioned on BPG
 	if bpg_type is not None and label_type != "moa":
 		le_bpg = get_label_encoder(bpg_type)
+
 		if bpg_type == "moa":
-			y_true_bpg = np.array(phone_to_moa(y_true))
+			y_true_bpg = np.array(map_phones(y_true, bpg_type))
 		elif bpg_type == "bpg":
-			y_true_bpg = np.array(phone_to_bpg(y_pred))
+			y_true_bpg = np.array(map_phones(y_pred, bpg_type))
 
 		for bpg in le_bpg.classes_:
 			bpg_idx = np.argwhere(y_true_bpg == bpg)
@@ -197,7 +195,7 @@ def get_performance_metrics(summary, conf_dict, decode_dir):
 
 	# Plot confusion matrix
 	if conf_dict["label_type"] == "phone":
-		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_phone_list(),
+		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_label_list("phone"),
 							  decode_dir, conf_dict["bpg"])
 		plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, "phoneme", decode_dir, conf_dict["bpg"])
 		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir, conf_dict["bpg"])
@@ -205,5 +203,5 @@ def get_performance_metrics(summary, conf_dict, decode_dir):
 		plot_phoneme_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], decode_dir, conf_dict["bpg"])
 		plot_moa_confusion_matrix(summary['y_true'], summary['y_pred'], le, "moa", decode_dir, conf_dict["bpg"])
 	elif conf_dict["label_type"] == "moa":
-		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_moa_list(),
+		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_label_list("moa"),
 							  decode_dir, conf_dict["bpg"])
