@@ -1,16 +1,14 @@
-# decoder.py
-# Author: Kevin Chu
-# Last Modified: 6/16/2020
-
+# External
 import torch
 
 
 class ViterbiDecoder:
 
-    def __init__(self, prior_probs, trans_mat, model):
-        self.prior_probs = prior_probs
-        self.trans_mat = trans_mat
+    def __init__(self, prior_probs, trans_mat, model, device):
+        self.prior_probs = prior_probs # unigram log probs
+        self.trans_mat = trans_mat # log probs of transition
         self.model = model
+        self.device = device
 
     def calculate_log_likelihood(self, obs):
         post_probs = self.model(obs)
@@ -21,9 +19,12 @@ class ViterbiDecoder:
     def decode(self, obs):
         log_likelihood = self.calculate_log_likelihood(obs)
 
+        # Reshape
+        log_likelihood = torch.squeeze(log_likelihood, 0)
+
         # Preallocate Viterbi cells and backtrace
-        v = torch.zeros(log_likelihood.size()[0], log_likelihood.size()[1])
-        bt = torch.zeros(log_likelihood.size()[0], log_likelihood.size()[1])
+        v = (torch.zeros(log_likelihood.size()[0], log_likelihood.size()[1])).to(self.device)
+        bt = (torch.zeros(log_likelihood.size()[0], log_likelihood.size()[1])).to(self.device)
 
         # Initialization
         v[0, :] = self.prior_probs + log_likelihood[0, :]

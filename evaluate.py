@@ -1,25 +1,25 @@
-from train import get_device
-import pickle
-from tqdm import tqdm
-from file_loader import read_feat_file
-import numpy as np
-from conf import read_conf
-import os
-from file_loader import read_feat_list
-from pathlib import Path
+# External
 import logging
-from net import get_model_type
-from net import LSTMLM
-
-# Evaluation
-from performance_metrics import get_performance_metrics
-
-# Labels
-from phone_mapping import get_label_encoder
-
-# PyTorch
+import numpy as np
+import os
+from pathlib import Path
+import pickle
 import torch
 import torch.nn.functional as F
+from tqdm import tqdm
+
+# Internal
+from conf import read_conf
+from decoder import ViterbiDecoder
+from file_loader import read_feat_file
+from file_loader import read_feat_list
+from language_model_framewise import read_lm
+from net import get_model_type
+from net import LSTMLM
+from performance_metrics import get_performance_metrics
+from phone_mapping import get_label_encoder
+from train import get_device
+
 
 def predict(model, le, conf_dict, file_list, scale_file):
     """ Test phoneme classification model
@@ -77,6 +77,85 @@ def predict(model, le, conf_dict, file_list, scale_file):
             y_pred = torch.argmax(outputs, dim=2)
             y_pred = torch.squeeze(y_pred, 0)
 
+            # Update summary
+            (summary['file']).append(file_list[i])
+            (summary['y_true']).append(y_batch)
+            (summary['y_pred']).append(np.array(y_pred.to('cpu')))
+            (summary['y_prob']).append((y_prob.to('cpu')).detach().numpy())
+
+    return summary
+
+
+def predict_with_ngram(model, le, conf_file, conf_dict, lm_type, file_list, scale_file):
+    """ Test phoneme classification model with ngram language model
+
+    Args:
+        model (torch.nn.Module): neural network model
+        le (sklearn.preprocessing.LabelEncoder): encodes string labels as integers
+        conf_dict (dict): configuration parameters
+        file_list (list): files in the test set
+        scaler (StandardScaler): scales features to zero mean unit variance
+
+    Returns:
+        summary (dict): dictionary containing file name, true class
+        predicted class, and probability of predicted class
+
+    """
+    logging.info("Testing model")
+
+    # Track file name, true class, predicted class, and prob of predicted class
+    summary = {"file": [], "y_true": [], "y_pred": [], "y_prob": []}
+
+    # Get the device
+    device = get_device()
+
+    # Language model
+    unigram = read_lm("1gram", "lm", conf_file, conf_dict)
+    unigram = (torch.tensor(unigram)).to(device)
+    bigram = read_lm("2gram", "lm", conf_file, conf_dict)
+    bigram = (torch.tensor(bigram)).to(device)
+
+    # Viterbi decoder
+    prior_probs = torch.reshape(unigram, (1, len(unigram)))
+    if lm_type is "1gram":
+        trans_mat = (torch.reshape(unigram, (len(unigram), 1))).repeat((1, len(unigram)))
+    elif lm_type is "2gram":
+        trans_mat = bigram
+    
+    decoder = ViterbiDecoder(prior_probs, trans_mat, model, device)
+
+    # Get scaler
+    with open(scale_file, 'rb') as f:
+        scaler = pickle.load(f)
+
+    # Evaluation mode
+    model.eval()
+    print("Testing")
+
+    with torch.no_grad():
+        for i in tqdm(range(len(file_list))):
+            logging.info("Testing file {}".format(file_list[i]))
+
+            # Extract features and labels for current file
+            x_batch, y_batch = read_feat_file(file_list[i], conf_dict)
+
+            # Normalize features
+            x_batch = scaler.transform(x_batch)
+
+            # Encode labels as integers
+            y_batch = le.transform(y_batch).astype('long')
+
+            # Reshape to (num_batch, seq_len, num_feats/num_out)
+            x_batch = np.reshape(x_batch, (1, np.shape(x_batch)[0], np.shape(x_batch)[1]))
+
+            # Move to GPU
+            x_batch = (torch.from_numpy(x_batch)).to(device)
+
+            # Get outputs and predictions
+            y_pred, best_score = decoder.decode(x_batch)
+            y_pred = torch.squeeze(y_pred, 0)
+            y_prob = torch.exp(best_score)
+            
             # Update summary
             (summary['file']).append(file_list[i])
             (summary['y_true']).append(y_batch)
@@ -190,7 +269,7 @@ def predict_with_lstmlm(model, le, conf_dict, lm_conf_file, file_list, scale_fil
     return summary
 
 
-def test(conf_file, model_name, test_set, lm_conf_file=None):
+def test(conf_file, model_name, test_set, lm_type, lm_conf_file=None):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
@@ -237,10 +316,13 @@ def test(conf_file, model_name, test_set, lm_conf_file=None):
     le = get_label_encoder(conf_dict["label_type"])
 
     # Get predictions
-    if not bool(lm_conf_file):
+    if not bool(lm_type):
         decode_dir = os.path.join(model_dir, "decode", "nolm", test_set)
         summary = predict(model, le, conf_dict, test_list, scale_file)
-    else:
+    elif "gram" in lm_type:
+        decode_dir = os.path.join(model_dir, "decode", lm_type, test_set)
+        summary = predict_with_ngram(model, le, conf_file, conf_dict, lm_type, test_list, scale_file)
+    elif lm_type is "lstmlm":
         decode_dir = os.path.join(model_dir, "decode", "lstmlm", test_set)
         summary = predict_with_lstmlm(model, le, conf_dict, lm_conf_file, test_list, scale_file)
 
@@ -291,19 +373,10 @@ def save_decoding(summary, test_set, le, decode_dir):
 
 if __name__ == '__main__':
     # # Inputs
-    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
+    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
     model_name = "model0"
-    test_set = "test_hint_aula_carolina_0_1_4_90_3"
+    test_set = "test_hint_office_0_1_3"
+    lm_type = "1gram"
     #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
-    test(conf_file, model_name, test_set)#, lm_conf_file)
-
-    #conf_dir = "conf/phone"
-    #conf_files = ["conf/phone/LSTM_rev_mspec.txt"]
-    #model_idxs = [0,1,2,3,4]
-    #test_sets = ["test_anechoic", "test_office_0_1_3", "test_office_1_1_3", "test_stairway_0_1_3_90", "test_stairway_1_1_3_90"]
-
-    #for conf_file in conf_files:
-    #    for model_idx in model_idxs:
-    #        for test_set in test_sets:
-    #            test(conf_file, model_idx, test_set)
+    test(conf_file, model_name, test_set, lm_type)#, lm_conf_file)

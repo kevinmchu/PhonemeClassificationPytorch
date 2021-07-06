@@ -5,6 +5,7 @@ import collections
 import os
 import os.path
 from pathlib import Path
+import sys
 
 # Internal
 from file_loader import read_feat_file
@@ -138,6 +139,10 @@ def read_lm(lm_type, lm_dir, conf_file, conf_dict):
     lm_file = save_dir + "/" + lm_type + ".npy"
 
     lm = np.load(lm_file)
+
+    # Replace nan and -inf with small negative numbers
+    lm[np.isinf(lm)] = np.log(sys.float_info.min)
+    lm[np.isnan(lm)] = np.log(sys.float_info.min)
 
     return lm
 
