@@ -271,7 +271,7 @@ def train_and_validate(conf_file, num_models):
 
 if __name__ == '__main__':
     # User inputs
-    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
+    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
     num_models = 1
 
     # Train and validate model

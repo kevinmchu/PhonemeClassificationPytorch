@@ -269,7 +269,7 @@ def predict_with_lstmlm(model, le, conf_dict, lm_conf_file, file_list, scale_fil
     return summary
 
 
-def test(conf_file, model_name, test_set, lm_type, lm_conf_file=None):
+def test(conf_file, model_name, test_set, lm_type=None, lm_conf_file=None):
     """ Make predictions and calculate performance metrics on
     the testing data.
 
@@ -373,10 +373,10 @@ def save_decoding(summary, test_set, le, decode_dir):
 
 if __name__ == '__main__':
     # # Inputs
-    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
-    model_name = "model0"
-    test_set = "test_hint_office_0_1_3"
-    lm_type = "1gram"
+    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
+    model_name = "librispeech_rev"
+    test_set = "test_hint_meeting_0_1_5"
+    #lm_type = "2gram"
     #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
-    test(conf_file, model_name, test_set, lm_type)#, lm_conf_file)
+    test(conf_file, model_name, test_set)#, lm_conf_file)

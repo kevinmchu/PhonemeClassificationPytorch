@@ -205,3 +205,6 @@ def get_performance_metrics(summary, conf_dict, decode_dir):
 	elif conf_dict["label_type"] == "moa":
 		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_label_list("moa"),
 							  decode_dir, conf_dict["bpg"])
+	elif conf_dict["label_type"] == "vuv":
+		plot_confusion_matrix(summary['y_true'], summary['y_pred'], le, conf_dict["label_type"], get_label_list("vuv"),
+							  decode_dir, conf_dict["bpg"])

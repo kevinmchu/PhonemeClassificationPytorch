@@ -101,7 +101,7 @@ def map_phones(phones, label_type):
     # Select appropriate mapping file
     # Phone to manner of articulation mapping as defined by TIMIT docs
     if label_type == "moa":
-        file = "phones/phone_to_moa_timit.txt"
+        file = "phones/phone_to_moa_timit2.txt"
     elif label_type == "bpg":
         file = "phones/phone_to_bpg_timit.txt"
     elif label_type == "vuv":
