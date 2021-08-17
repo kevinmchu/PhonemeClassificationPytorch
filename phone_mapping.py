@@ -14,7 +14,7 @@ def get_label_list(label_type):
     if label_type == "phone":
         label_file = "phones/phone_list.txt"
     elif label_type == "phoneme":
-        label_file = "phones/phoneme_list.txt"
+        label_file = "phones/phoneme_list_arpabet.txt"
     elif label_type == "moa":
         label_file = "phones/moa_list.txt"
     elif label_type == "bpg":

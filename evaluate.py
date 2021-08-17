@@ -373,9 +373,9 @@ def save_decoding(summary, test_set, le, decode_dir):
 
 if __name__ == '__main__':
     # # Inputs
-    conf_file = "conf/moa/LSTM_but_rev_fftspec_ci.txt"
-    model_name = "librispeech_rev"
-    test_set = "test_hint_meeting_0_1_5"
+    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
+    model_name = "librispeech_rev_arpabet"
+    test_set = "test_hint_aula_carolina_1_1_4_90_3"
     #lm_type = "2gram"
     #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
