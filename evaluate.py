@@ -375,8 +375,8 @@ if __name__ == '__main__':
     # # Inputs
     conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
     model_name = "librispeech_rev_arpabet"
-    test_set = "test_hint_aula_carolina_1_1_4_90_3"
-    #lm_type = "2gram"
+    test_set = "test_hint_office_0_1_3"
+    lm_type = "2gram"
     #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
     
-    test(conf_file, model_name, test_set)#, lm_conf_file)
+    test(conf_file, model_name, test_set, lm_type)#, lm_conf_file)

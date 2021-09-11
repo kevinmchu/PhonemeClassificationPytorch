@@ -51,7 +51,7 @@ def unigram(conf_dict):
 
     assert (np.sum(lm) > 0.999 and np.sum(lm) < 1.001)
     
-    return np.log(lm)
+    return np.log(lm), le.classes_
 
 
 def bigram(conf_dict):
@@ -95,10 +95,10 @@ def bigram(conf_dict):
     # Convert counts into probs
     lm = lm/np.sum(lm, axis=0)
 
-    return np.log(lm)
+    return np.log(lm), le.classes_
 
 
-def write_lm(lm, lm_type, lm_dir, conf_file, conf_dict):
+def write_lm(lm, classes, lm_type, lm_dir, conf_file, conf_dict):
     """ Saves language model to npy file
 
     Args:
@@ -116,9 +116,9 @@ def write_lm(lm, lm_type, lm_dir, conf_file, conf_dict):
     if not os.path.exists(save_dir):
         Path(save_dir).mkdir(parents=True)
     
-    lm_file = save_dir + "/" + lm_type + ".npy"
+    lm_file = save_dir + "/" + lm_type + ".npz"
 
-    np.save(lm_file, lm)
+    np.savez(lm_file, probs=lm, phones=classes)
 
 
 def read_lm(lm_type, lm_dir, conf_file, conf_dict):
@@ -149,8 +149,8 @@ def read_lm(lm_type, lm_dir, conf_file, conf_dict):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
-    lm_type = "2gram"
+    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
+    lm_type = "1gram"
     lm_dir = "lm"
 
     # Read in conf file
@@ -158,11 +158,11 @@ if __name__ == '__main__':
 
     # Get bigram probabilities
     if lm_type == "1gram":
-        lm = unigram(conf_dict)
+        lm, classes = unigram(conf_dict)
     elif lm_type == "2gram":
-        lm = bigram(conf_dict)
+        lm, classes = bigram(conf_dict)
 
-    write_lm(lm, lm_type, lm_dir, conf_file, conf_dict)
+    write_lm(lm, classes, lm_type, lm_dir, conf_file, conf_dict)
 
     lm_read = read_lm(lm_type, lm_dir, conf_file, conf_dict)
 
