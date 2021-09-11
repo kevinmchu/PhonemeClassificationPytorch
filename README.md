@@ -25,7 +25,7 @@ This repository can develop neural networks to classify
 ### Testing
 The steps to test trained classification models are similar.
 1) In the feature_extraction directory, run `extractFeaturesTestingData.m` to extract features for the testing set.
-2) Run `txt2npy.py`.
+2) Run `txt2npz.py`.
 3) Run `evaluate.py` to test the classification models.
 
 ## Models
