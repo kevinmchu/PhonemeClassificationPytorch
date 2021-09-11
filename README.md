@@ -15,6 +15,19 @@ This repository can develop neural networks to classify
 * Manner of articulation (MOA)
 * Manner of articulation voiced or unvoiced (MOA-VUV)
 
+## Steps to Training and Testing Classification Models
+### Training
+1) In the feature_extraction directory, run `extractFeaturesTrainingData.m`. This is a MATLAB script that extracts features for the training and development sets. Refer to comments in the .m file for information on how to define the speech corpus and the RIR database to use for generating the training and development sets. The extracted features are stored in .txt files. IMPORTANT: Make sure to store the feature files in a server with lots of space. The total size of the feature files can easily be in the tens of GB.
+2) Run `txt2npy.py`. This is a Python module that converts the feature files from .txt files to compressed .npz files, which allows the feature files to be read in much faster than .txt files, which subsequently allows the models to train much faster.
+3) Create a model configuration file using either an existing model in the conf directory or by defining your own model. Additional detail is provided below in the section titled 'Configuration Files'.
+4) Run the `train.py` script to train a classification model.
+
+### Testing
+The steps to test trained classification models are similar.
+1) In the feature_extraction directory, run `extractFeaturesTestingData.m` to extract features for the testing set.
+2) Run `txt2npy.py`.
+3) Run `evaluate.py` to test the classification models.
+
 ## Models
 ### Architectures
 The repository currently supports the following neural network architectures:
