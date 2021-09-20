@@ -158,7 +158,10 @@ def read_feat_file(filename, conf_dict):
     if "window_size" in conf_dict.keys():
         X = splice(X, conf_dict)
 
-    if conf_dict["label_type"] == 'phoneme':
+    if conf_dict["label_type"] == 'phone':
+        y = y
+
+    elif conf_dict["label_type"] == 'phoneme':
         # Map phones to phonemes
         y = phone_to_phoneme(y, 39)
         y = np.array(y, dtype='object')

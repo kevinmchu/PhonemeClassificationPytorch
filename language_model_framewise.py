@@ -136,9 +136,10 @@ def read_lm(lm_type, lm_dir, conf_file, conf_dict):
     """
     save_dir = os.path.join(lm_dir, conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt",""))
     
-    lm_file = save_dir + "/" + lm_type + ".npy"
+    lm_file = save_dir + "/" + lm_type + ".npz"
 
-    lm = np.load(lm_file)
+    data = np.load(lm_file)
+    lm = data["probs"]
 
     # Replace nan and -inf with small negative numbers
     lm[np.isinf(lm)] = np.log(sys.float_info.min)
@@ -149,8 +150,8 @@ def read_lm(lm_type, lm_dir, conf_file, conf_dict):
 
 if __name__ == '__main__':
     # Inputs
-    conf_file = "conf/phoneme/LSTM_sim_rev_fftspec_ci.txt"
-    lm_type = "1gram"
+    conf_file = "conf/phone/LSTM_rev_mspec.txt"
+    lm_type = "2gram"
     lm_dir = "lm"
 
     # Read in conf file

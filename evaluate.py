@@ -291,13 +291,19 @@ def test(conf_file, model_name, test_set, lm_type=None, lm_conf_file=None):
     test_feat_list = "data/" + test_set + "/" + conf_dict["feature_type"] + ".txt"
 
     # Load trained model
-    model_dir = os.path.join("exp", conf_dict["label_type"], (conf_file.split("/")[2]).replace(".txt", ""),
+    model_dir = os.path.join("exp",
+                             conf_dict["label_type"],
+                             (conf_file.split("/")[2]).replace(".txt", ""),
                              model_name)
 
     model = get_model_type(conf_dict)
-    #model.load_state_dict(torch.load(model_dir + "/model.pt"), strict=False)
-    checkpoint = torch.load(model_dir + "/checkpoint.pt")
-    model.load_state_dict(checkpoint['model'], strict=False)
+
+    # Load in model parameters
+    try:
+        checkpoint = torch.load(model_dir + "/checkpoint.pt")
+        model.load_state_dict(checkpoint['model'], strict=False)        
+    except FileNotFoundError:
+        model.load_state_dict(torch.load(model_dir + "/model.pt"), strict=False)        
 
     # Move to GPU
     device = get_device()
@@ -373,10 +379,18 @@ def save_decoding(summary, test_set, le, decode_dir):
 
 if __name__ == '__main__':
     # # Inputs
-    conf_file = "conf/phoneme/LSTM_but_rev_fftspec_ci.txt"
-    model_name = "librispeech_rev_arpabet"
-    test_set = "test_hint_office_0_1_3"
+    conf_file = "conf/phone/LSTM_rev_mspec.txt"
+    model_names = ["model0"]
+    test_sets = ["test_anechoic",
+                 "test_office_0_1_3",
+                 "test_office_1_1_3",
+                 "test_stairway_0_1_3_90",
+                 "test_stairway_1_1_3_90"]
     lm_type = "2gram"
     #lm_conf_file = "conf_lm/phoneme/LSTM_sim_rev_fftspec_ci.txt"
-    
-    test(conf_file, model_name, test_set, lm_type)#, lm_conf_file)
+
+    for model_name in model_names:
+        print(model_name)
+        for test_set in test_sets:
+            print(test_set)
+            test(conf_file, model_name, test_set, lm_type)#, lm_conf_file)

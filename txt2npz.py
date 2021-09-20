@@ -26,17 +26,16 @@ def convert_featfile_to_npz(dataset):
 
         # Extract features and labels
         featsAndLabs = list(map(lambda a: a.split(), x))
-        X = np.array(list(map(lambda a: a[0:65], featsAndLabs)), dtype='float32')
-        y = np.array(list(map(lambda a: a[65:-1], featsAndLabs)), dtype='float32')
+        X = np.array(list(map(lambda a: a[0:-1], featsAndLabs)), dtype='float32')
         phones = np.array(list(map(lambda a: a[-1], featsAndLabs)))
 
         npz_file = feat_list[i].replace(".txt", ".npz")
 
-        np.savez_compressed(npz_file, feats=X, mask=y, phones=phones)
+        np.savez_compressed(npz_file, feats=X, phones=phones)
 
 
 if __name__ == '__main__':
     # User inputs
-    dataset = "data/test_hint_office_0_1_3/fftspec_ci.txt"
+    dataset = "data/icassp/test_stairway_1_1_3_90/mspec.txt"
 
     convert_featfile_to_npz(dataset)
